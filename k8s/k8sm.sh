@@ -9,15 +9,15 @@ export APTMARK="sudo apt-mark"
 export APTKEY="sudo apt-key"
 export ADDAPT="sudo add-apt-repository"
 
-CONTAINER_RUNTIME=${CONTAINER_RUNTIME:-"docker"}
-CLUSTER_CIDR=${CLUSTER_CIDR:-"10.244.0.0/16"}
-NETWORK_PLUGIN=${NETWORK_PLUGIN:-"flannel"}
-KUBERNTES_ROOT=$(dirname "${BASH_SOURCE}")
+CLUSTER_CIDR=${CLUSTER_CIDR:-"10.244.0.0"}
+NETWORK_PLUGIN=calico
+
+export K8S_ROOT=$(dirname "${BASH_SOURCE}")
 
 
-source ${KUBERNTES_ROOT}/instal-deps.sh
-source ${KUBERNTES_ROOT}/prepare.sh
-source ${KUBERNTES_ROOT}/cni.sh
+source ${K8S_ROOT}/deps.sh
+source ${K8S_ROOT}/prepare.sh
+source ${K8S_ROOT}/cni.sh
 
 function deploy-k8s() {
     sudo kubeadm init --pod-network-cidr 10.244.0.1/16 --kubernetes-version stable
@@ -31,10 +31,12 @@ function config-kubectl() {
 }
 
 function main() {
-    swap-off
-    install-docker
-    install-kubetools
+#    swap-off
+#    install-docker
+#    install-kubetools
     deploy-k8s
     config-kubectl
     install-calico
 }
+
+main
