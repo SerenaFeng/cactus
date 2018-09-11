@@ -20,7 +20,7 @@ source ${K8S_ROOT}/prepare.sh
 source ${K8S_ROOT}/cni.sh
 
 function deploy-k8s() {
-    sudo kubeadm init --pod-network-cidr 10.244.0.1/16 --kubernetes-version stable
+    sudo kubeadm init --pod-network-cidr 10.244.0.1/16 --kubernetes-version v1.10.7
 }
 
 function config-kubectl() {
@@ -30,6 +30,10 @@ function config-kubectl() {
     kubectl taint nodes --all node-role.kubernetes.io/master-
 }
 
+function install-dashboard() {
+    kubectl apply -f ../config/dashboard.yaml
+}
+
 function main() {
 #    swap-off
 #    install-docker
@@ -37,6 +41,7 @@ function main() {
     deploy-k8s
     config-kubectl
     install-calico
+    install-dashboard
 }
 
 main
