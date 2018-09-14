@@ -9,12 +9,13 @@ export APTMARK="sudo apt-mark"
 export APTKEY="sudo apt-key"
 export ADDAPT="sudo add-apt-repository"
 
+
 CLUSTER_CIDR=${CLUSTER_CIDR:-"10.244.0.0"}
 NETWORK_PLUGIN=calico
 
 export K8S_ROOT=$(dirname "${BASH_SOURCE}")
-
-
+export REPO_DIR=$(dirname ${K8S_ROOT})
+export CONF_DIR=${REPO_DIR}/kube-config
 source ${K8S_ROOT}/deps.sh
 source ${K8S_ROOT}/prepare.sh
 source ${K8S_ROOT}/cni.sh
@@ -31,7 +32,11 @@ function config-kubectl() {
 }
 
 function install-dashboard() {
-    kubectl apply -f ../kube-config/dashboard.yaml
+    kubectl apply -f ${CONF_DIR}/dashboard.yaml
+}
+
+function install-monitor() {
+    kubectl apply -f ${CONF_DIR}/$1
 }
 
 function main() {
@@ -42,6 +47,7 @@ function main() {
     config-kubectl
     install-calico
     install-dashboard
+    install-monitor "metrics-server"
 }
 
 main
