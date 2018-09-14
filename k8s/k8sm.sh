@@ -9,13 +9,37 @@ export APTMARK="sudo apt-mark"
 export APTKEY="sudo apt-key"
 export ADDAPT="sudo add-apt-repository"
 
-
 CLUSTER_CIDR=${CLUSTER_CIDR:-"10.244.0.0"}
 NETWORK_PLUGIN=calico
+MONITOR="metrics-server"
 
 export K8S_ROOT=$(dirname "${BASH_SOURCE}")
 export REPO_DIR=$(dirname ${K8S_ROOT})
 export CONF_DIR=${REPO_DIR}/kube-config
+
+function usage() {
+    echo "usage:"
+    echo "  -m <monitor>: choose the monitor, heapster or metrics-server, default is metrics-server"
+}
+
+OPTIND=1
+while getopts "hm:" opt; do
+    case "$opt" in
+    h)
+        usage
+        exit 0
+        ;;
+    m)
+        MONITOR=$OPTARG
+        ;;
+    *)
+        echo "unsupported options"
+        usage
+        exit 0
+    esac
+done
+
+
 source ${K8S_ROOT}/deps.sh
 source ${K8S_ROOT}/prepare.sh
 source ${K8S_ROOT}/cni.sh
@@ -36,7 +60,7 @@ function install-dashboard() {
 }
 
 function install-monitor() {
-    kubectl apply -f ${CONF_DIR}/$1
+    kubectl apply -f ${CONF_DIR}/$MONITOR
 }
 
 function main() {
@@ -47,7 +71,7 @@ function main() {
     config-kubectl
     install-calico
     install-dashboard
-    install-monitor "metrics-server"
+    install-monitor 
 }
 
 main
