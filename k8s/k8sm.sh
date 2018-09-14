@@ -31,7 +31,7 @@ function config-kubectl() {
 }
 
 function install-dashboard() {
-    kubectl apply -f ../config/dashboard.yaml
+    kubectl apply -f ../kube-config/dashboard.yaml
 }
 
 function main() {
