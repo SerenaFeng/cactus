@@ -15,15 +15,16 @@ MONITOR="metrics-server"
 
 export K8S_ROOT=$(dirname "${BASH_SOURCE}")
 export REPO_DIR=$(dirname ${K8S_ROOT})
-export CONF_DIR=${REPO_DIR}/kube-config
+export KUBECONF=${REPO_DIR}/kube-config
 
 function usage() {
     echo "usage:"
     echo "  -m <monitor>: choose the monitor, heapster or metrics-server, default is metrics-server"
+    echo "  -n <cni plugin>: calico or flannel, default is calico"
 }
 
 OPTIND=1
-while getopts "hm:" opt; do
+while getopts "hmn:" opt; do
     case "$opt" in
     h)
         usage
@@ -31,6 +32,9 @@ while getopts "hm:" opt; do
         ;;
     m)
         MONITOR=$OPTARG
+        ;;
+    n)
+        NETWORK_PLUGIN=$OPTARG
         ;;
     *)
         echo "unsupported options"
@@ -56,11 +60,11 @@ function config-kubectl() {
 }
 
 function install-dashboard() {
-    kubectl apply -f ${CONF_DIR}/dashboard.yaml
+    kubectl apply -f ${KUBECONF}/dashboard.yaml
 }
 
 function install-monitor() {
-    kubectl apply -f ${CONF_DIR}/$MONITOR
+    kubectl apply -f ${KUBECONF}/$MONITOR
 }
 
 function main() {
@@ -69,7 +73,7 @@ function main() {
 #    install-kubetools
     deploy-k8s
     config-kubectl
-    install-calico
+    install-cni
     install-dashboard
     install-monitor 
 }
