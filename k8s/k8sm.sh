@@ -12,6 +12,7 @@ export ADDAPT="sudo add-apt-repository"
 CLUSTER_CIDR=${CLUSTER_CIDR:-"10.244.0.0"}
 NETWORK_PLUGIN=calico
 MONITOR="metrics-server"
+CSI_PLUGIN='hostpath'
 
 export K8S_ROOT=$(dirname "${BASH_SOURCE}")
 export REPO_DIR=$(dirname ${K8S_ROOT})
@@ -21,10 +22,11 @@ function usage() {
     echo "usage:"
     echo "  -m <monitor>: choose the monitor, heapster or metrics-server, default is metrics-server"
     echo "  -n <cni plugin>: calico or flannel, default is calico"
+    echo "  -v <csi plugin>: only support hostpath for now"
 }
 
 OPTIND=1
-while getopts "hmn:" opt; do
+while getopts "hmnv:" opt; do
     case "$opt" in
     h)
         usage
@@ -35,6 +37,9 @@ while getopts "hmn:" opt; do
         ;;
     n)
         NETWORK_PLUGIN=$OPTARG
+        ;;
+    v)
+        CSI_PLUGIN=$OPTARG
         ;;
     *)
         echo "unsupported options"
@@ -67,6 +72,10 @@ function install-monitor() {
     kubectl apply -f ${KUBECONF}/$MONITOR
 }
 
+function install-csi() {
+    kubectl apply -f ${KUBECONF}/$CSI_PLUGIN
+}
+
 function main() {
 #    swap-off
 #    install-docker
@@ -76,6 +85,7 @@ function main() {
     install-cni
     install-dashboard
     install-monitor 
+    install-csi
 }
 
 main
