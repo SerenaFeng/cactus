@@ -22,11 +22,11 @@ function usage() {
     echo "usage:"
     echo "  -m <monitor>: choose the monitor, heapster or metrics-server, default is metrics-server"
     echo "  -n <cni plugin>: calico or flannel, default is calico"
-    echo "  -v <csi plugin>: only support hostpath for now"
+    echo "  -s <csi plugin>: only support hostpath for now"
 }
 
 OPTIND=1
-while getopts "hmnv:" opt; do
+while getopts "h:m:n:s:" opt; do
     case "$opt" in
     h)
         usage
@@ -38,11 +38,11 @@ while getopts "hmnv:" opt; do
     n)
         NETWORK_PLUGIN=$OPTARG
         ;;
-    v)
+    s)
         CSI_PLUGIN=$OPTARG
         ;;
     *)
-        echo "unsupported options"
+        echo "unsupported options : $opt"
         usage
         exit 0
     esac
@@ -84,8 +84,12 @@ function main() {
     config-kubectl
     install-cni
     install-dashboard
-    install-monitor 
-    install-csi
+    if [[ $MONITOR != "noop" ]]; then
+        install-monitor
+    fi
+    if [[ $CSI_PLUGIN != "noop" ]];then
+        install-csi
+    fi
 }
 
 main
