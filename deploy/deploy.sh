@@ -22,6 +22,7 @@ CACTUS_BRIDGES=('cactus_br')
 BR_NAMES=('cactus_admin')
 BASE_CONFIG_URI="file://${REPO_ROOT_PATH}/config"
 LOCAL_IDF=${REPO_ROOT_PATH}/config/lab/basic/idf.yaml
+SCENARIO=${REPO_ROOT_PATH}/config/scenario/virtual/k8s-calico-noha.yaml
 DRY_RUN=${DRY_RUN:-0}
 INFRA_CREATION_ONLY=${INFRA_CREATION_ONLY:-0}
 NO_DEPLOY_ENVIRONMENT=${NO_DEPLOY_ENVIRONMENT:-0}
@@ -51,7 +52,7 @@ fi
 
 # Get required infra deployment data
 set +x
-eval "$(parse_yaml "${SCENARIO_DIR}/${DEPLOY_TYPE}/${DEPLOY_SCENARIO}.yaml")"
+eval "$(parse_yaml "${SCENARIO}")"
 [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
 
 export CLUSTER_DOMAIN=${cluster_domain}

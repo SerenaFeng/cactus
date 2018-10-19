@@ -13,16 +13,17 @@
 
 function generate_ssh_key {
   local cactus_ssh_key=$(basename "${SSH_KEY}")
-  local user="${USER}"
+  local user=${USER}
   if [ -n "${SUDO_USER}" ] && [ "${SUDO_USER}" != 'root' ]; then
-    user="${SUDO_USER}"
+    user=${SUDO_USER}
   fi
 
   if [ -f "${SSH_KEY}" ]; then
-    ssh-keygen -f "${SSH_KEY}" -y > "${SSH_KEY}.pub"
+    cp "${SSH_KEY}" .
+    ssh-keygen -f "${cactus_ssh_key}" -y > "${cactus_ssh_key}.pub"
   fi
 
-  [ -f "${SSH_KEY}" ] || ssh-keygen -f "${SSH_KEY}" -N ''
+  [ -f "${cactus_ssh_key}" ] || ssh-keygen -f "${cactus_ssh_key}" -N ''
   sudo install -D -o "${user}" -m 0600 "${cactus_ssh_key}" "${SSH_KEY}"
   sudo install -D -o "${user}" -m 0600 "${cactus_ssh_key}.pub" "${SSH_KEY}.pub"
 }
@@ -48,7 +49,7 @@ function build_images {
 function build_builder_image {
   local repo_root_path=$1
   local builder_image=$2
-  [[ docker images -q ${builder_image}  2>/dev/null ]] || {
+  [[ "$(docker images -q ${builder_image} 2>/dev/null)" != "" ]] || {
     echo "build diskimage_builder image... "
     pushd ${repo_root_path}/images/docker/dib
     docker build -t ${builder_image} .

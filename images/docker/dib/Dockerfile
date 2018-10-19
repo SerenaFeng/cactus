@@ -7,5 +7,6 @@ RUN yum update -y \
  && yum clean all \
  && pip install -U git+https://github.com/openstack/diskimage-builder.git
 ADD /create_image.sh /create_image.sh
+RUN chmod +x /create_image.sh
 
-ENTRYPOINT ["/bin/bash"]
+CMD ["/bin/bash"]
