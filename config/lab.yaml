@@ -1,0 +1,50 @@
+### lab descriptor file ###
+
+version: 1.0
+details:
+  lab_owner: SerenaFeng
+  contact: serena.feng.711@gmail.com
+  lab: Kubernetes Lab
+  location: Shanghai
+  type: experimental
+  link: ''
+
+##############################################################################
+# Note: no symbol of "-" in name, or parser_yaml will not be correct
+nodes:
+  # Note1: name must be unique in pdf, TODO check automatically
+  # Note2: symbol of "-" in name will be replaced with "_" automatically,
+  # or parse_yaml will not be correct since name is the key(not value)
+  # of minions in cookiecutter.json/yaml
+  - name: master01
+    enabled: True
+    node_id: 1
+    hostname: k8s-master01
+    cloud_native:
+      enabled: true
+      master: true
+    node: &nodeparams
+      type: vm
+      arch: x86_64
+      cpus: 2
+      cores: 8
+      memory: 32G
+    disks: &disks
+      - name: 'disk1'
+        disk_capacity: 20G
+        disk_type: hdd
+    interfaces:
+      - mac_address: "FF:EE:DD:CC:BB:A1"
+  - name: minion01
+    enabled: True
+    node_id: 2
+    hostname: k8s-minion01
+    cloud_native:
+      enabled: true
+      master: false
+    labels:
+      mostuse: true
+    node: *nodeparams
+    disks: *disks
+    interfaces:
+      - mac_address: "FF:EE:DD:CC:BB:A2"

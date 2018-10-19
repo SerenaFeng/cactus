@@ -1,0 +1,5 @@
+---
+cluster:
+  domain: k8s-calico-noha.cactus
+  states:
+    - kubernetes_noha
