@@ -4,7 +4,7 @@ version: 1.0
 details:
   lab_owner: SerenaFeng
   contact: serena.feng.711@gmail.com
-  lab: Kubernetes Lab
+  lab: Kubernetes-Lab
   location: Shanghai
   type: experimental
   link: ''
@@ -29,9 +29,10 @@ nodes:
       cpus: 2
       cores: 8
       memory: 32G
+      disk: 20G
     disks: &disks
       - name: 'disk1'
-        disk_capacity: 20G
+        disk_capacity: 40G
         disk_type: hdd
     interfaces:
       - mac_address: "FF:EE:DD:CC:BB:A1"

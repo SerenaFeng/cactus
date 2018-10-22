@@ -29,16 +29,22 @@ function generate_ssh_key {
 }
 
 function build_images {
-  local repo_root_path=$1
-  local storage_dir=$2
   local builder_image=cactus/dib:latest
   local dib_name=cactus_image_builder
   local sshpub="${SSH_KEY}.pub"
-  build_builder_image ${repo_root_path} ${builder_image}
+  build_builder_image ${builder_image}
+
+  [[ "$(docker images -q ${builder_image} 2>/dev/null)" != "" ]] || {
+    echo "build diskimage_builder image... "
+    pushd ${REPO_ROOT_PATH}/images/docker/dib
+    docker build -t ${builder_image} .
+    popd
+  }
+
   echo "Start DIB console named ${dib_name} service ... "
   docker run -it \
            --name ${dib_name} \
-           -v $storage_dir:/imagedata \
+           -v ${STORAGE_DIR}:/imagedata \
            -v ${sshpub}:/id_rsa.pub \
            --privileged \
            --rm \
@@ -46,223 +52,36 @@ function build_images {
            bash /create_image.sh
 }
 
-function build_builder_image {
-  local repo_root_path=$1
-  local builder_image=$2
-  [[ "$(docker images -q ${builder_image} 2>/dev/null)" != "" ]] || {
-    echo "build diskimage_builder image... "
-    pushd ${repo_root_path}/images/docker/dib
-    docker build -t ${builder_image} .
-    popd
-  }
+function parse_vnodes {
+  eval $(python deploy/parse_pdf.py -y ${REPO_ROOT_PATH}/config/lab/basic/lab.yaml 2>&1)
 }
 
-function __kernel_modules {
-  # Load mandatory kernel modules: loop, nbd
-  local image_dir=$1
-  sudo modprobe loop
-  if sudo modprobe nbd max_part=8 || sudo modprobe -f nbd max_part=8; then
-    return 0
-  fi
-  # CentOS (or RHEL family in general) do not provide 'nbd' out of the box
-  echo "[WARN] 'nbd' kernel module cannot be loaded!"
-  if [ ! -e /etc/redhat-release ]; then
-    echo "[ERROR] Non-RHEL system detected, aborting!"
-    echo "[ERROR] Try building 'nbd' manually or install it from a 3rd party."
-    exit 1
-  fi
+function get_vnodes {
+  local pdf="{REPO_ROOT_PATH}/config/lab/basic/lab.yaml"
+  local s
+  local w
+  local fs
+  s='[[:space:]]*'
+  w='[a-zA-Z0-9_]*'
+  fs="$(echo @|tr @ '\034')"
 
-  # Best-effort attempt at building a non-maintaned kernel module
-  local __baseurl
-  local __subdir
-  local __uname_r=$(uname -r)
-  local __uname_m=$(uname -m)
-  if [ "${__uname_m}" = 'x86_64' ]; then
-    __baseurl='http://vault.centos.org/centos'
-    __subdir='Source/SPackages'
-    __srpm="kernel-${__uname_r%.${__uname_m}}.src.rpm"
-  else
-    __baseurl='http://vault.centos.org/altarch'
-    __subdir="Source/${__uname_m}/Source/SPackages"
-    # NOTE: fmt varies across releases (e.g. kernel-alt-4.11.0-44.el7a.src.rpm)
-    __srpm="kernel-alt-${__uname_r%.${__uname_m}}.src.rpm"
-  fi
-
-  local __found='n'
-  local __versions=$(curl -s "${__baseurl}/" | grep -Po 'href="\K7\.[\d\.]+')
-  for ver in ${__versions}; do
-    for comp in os updates; do
-      local url="${__baseurl}/${ver}/${comp}/${__subdir}/${__srpm}"
-      if wget "${url}" -O "${image_dir}/${__srpm}" > /dev/null 2>&1; then
-        __found='y'; break 2
-      fi
-    done
-  done
-
-  if [ "${__found}" = 'n' ]; then
-    echo "[ERROR] Can't find the linux kernel SRPM for: ${__uname_r}"
-    echo "[ERROR] 'nbd' module cannot be built, aborting!"
-    echo "[ERROR] Try 'yum upgrade' or building 'nbd' krn module manually ..."
-    exit 1
-  fi
-
-  rpm -ivh "${image_dir}/${__srpm}" 2> /dev/null
-  mkdir -p ~/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
-  # shellcheck disable=SC2016
-  echo '%_topdir %(echo $HOME)/rpmbuild' > ~/.rpmmacros
-  (
-    cd ~/rpmbuild/SPECS
-    rpmbuild -bp --nodeps --target="${__uname_m}" kernel*.spec
-    cd ~/rpmbuild/BUILD/"${__srpm%.src.rpm}"/linux-*
-    sed -i 's/^.*\(CONFIG_BLK_DEV_NBD\).*$/\1=m/g' .config
-    # http://centosfaq.org/centos/nbd-does-not-compile-for-3100-514262el7x86_64
-    if grep -Rq 'REQ_TYPE_DRV_PRIV' drivers/block; then
-      sed -i 's/REQ_TYPE_SPECIAL/REQ_TYPE_DRV_PRIV/g' drivers/block/nbd.c
-    fi
-    gunzip -c "/boot/symvers-${__uname_r}.gz" > Module.symvers
-    make prepare modules_prepare
-    make M=drivers/block -j
-    modinfo drivers/block/nbd.ko
-    sudo mkdir -p "/lib/modules/${__uname_r}/extra/"
-    sudo cp drivers/block/nbd.ko "/lib/modules/${__uname_r}/extra/"
-  )
-  sudo depmod -a
-  sudo modprobe nbd max_part=8 || sudo modprobe -f nbd max_part=8
-}
-
-function mount_image {
-  local image=$1
-  local image_dir=$2
-  OPNFV_MNT_DIR="${image_dir}/ubuntu"
-
-  # Find free nbd, loop devices
-  for dev in '/sys/class/block/nbd'*; do
-    if [ "$(cat "${dev}/size")" = '0' ]; then
-      OPNFV_NBD_DEV=/dev/$(basename "${dev}")
-      break
-    fi
-  done
-  OPNFV_LOOP_DEV=$(losetup -f)
-  OPNFV_MAP_DEV=/dev/mapper/$(basename "${OPNFV_NBD_DEV}")p1
-  export OPNFV_MNT_DIR OPNFV_LOOP_DEV
-  [ -n "${OPNFV_NBD_DEV}" ] && [ -n "${OPNFV_LOOP_DEV}" ] || exit 1
-  qemu-img resize "${image_dir}/${image}" 3G
-  sudo qemu-nbd --connect="${OPNFV_NBD_DEV}" --aio=native --cache=none \
-    "${image_dir}/${image}"
-  sudo kpartx -av "${OPNFV_NBD_DEV}"
-  sleep 5 # /dev/nbdNp1 takes some time to come up
-  # Hardcode partition index to 1, unlikely to change for Ubuntu UCA image
-  if sudo growpart "${OPNFV_NBD_DEV}" 1; then
-    sudo kpartx -u "${OPNFV_NBD_DEV}"
-    sudo e2fsck -pf "${OPNFV_MAP_DEV}"
-    sudo resize2fs "${OPNFV_MAP_DEV}"
-  fi
-  # grub-update does not like /dev/nbd*, so use a loop device to work around it
-  sudo losetup "${OPNFV_LOOP_DEV}" "${OPNFV_MAP_DEV}"
-  mkdir -p "${OPNFV_MNT_DIR}"
-  sudo mount "${OPNFV_LOOP_DEV}" "${OPNFV_MNT_DIR}"
-  sudo mount -t proc proc "${OPNFV_MNT_DIR}/proc"
-  sudo mount -t sysfs sys "${OPNFV_MNT_DIR}/sys"
-  sudo mount -o bind /dev "${OPNFV_MNT_DIR}/dev"
-  sudo mkdir -p "${OPNFV_MNT_DIR}/run/resolvconf"
-  sudo cp /etc/resolv.conf "${OPNFV_MNT_DIR}/run/resolvconf"
-  echo "GRUB_DISABLE_OS_PROBER=true" | \
-    sudo tee -a "${OPNFV_MNT_DIR}/etc/default/grub"
-  sudo sed -i -e 's/^\(GRUB_TIMEOUT\)=.*$/\1=1/g' -e 's/^GRUB_HIDDEN.*$//g' \
-    "${OPNFV_MNT_DIR}/etc/default/grub"
-}
-
-function apt_repos_pkgs_image {
-  local apt_key_urls=(${1//,/ })
-  local all_repos=(${2//,/ })
-  local pkgs_i=(${3//,/ })
-  local pkgs_r=(${4//,/ })
-  [ -n "${OPNFV_MNT_DIR}" ] || exit 1
-
-  # APT keys
-  if [ "${#apt_key_urls[@]}" -gt 0 ]; then
-    for apt_key in "${apt_key_urls[@]}"; do
-      sudo chroot "${OPNFV_MNT_DIR}" /bin/bash -c \
-        "wget -qO - '${apt_key}' | apt-key add -"
-    done
-  fi
-  # Additional repositories
-  for repo_line in "${all_repos[@]}"; do
-    # <repo_name>|<repo prio>|deb|[arch=<arch>]|<repo url>|<dist>|<repo comp>
-    local repo=(${repo_line//|/ })
-    [ "${#repo[@]}" -gt 5 ] || continue
-    # NOTE: Names and formatting are compatible with Salt linux.system.repo
-    cat <<-EOF | sudo tee "${OPNFV_MNT_DIR}/etc/apt/preferences.d/${repo[0]}"
-
-		Package: *
-		Pin: release a=${repo[-2]}
-		Pin-Priority: ${repo[1]}
-
-		EOF
-    echo "${repo[@]:2}" | sudo tee \
-      "${OPNFV_MNT_DIR}/etc/apt/sources.list.d/${repo[0]}.list"
-  done
-  # Install packages
-  if [ "${#pkgs_i[@]}" -gt 0 ]; then
-    sudo DEBIAN_FRONTEND="noninteractive" \
-      chroot "${OPNFV_MNT_DIR}" apt-get update
-    sudo DEBIAN_FRONTEND="noninteractive" FLASH_KERNEL_SKIP="true" \
-      chroot "${OPNFV_MNT_DIR}" apt-get install -y "${pkgs_i[@]}"
-  fi
-  # Remove packages
-  if [ "${#pkgs_r[@]}" -gt 0 ]; then
-    sudo DEBIAN_FRONTEND="noninteractive" FLASH_KERNEL_SKIP="true" \
-      chroot "${OPNFV_MNT_DIR}" apt-get purge -y "${pkgs_r[@]}"
-  fi
-  # Disable cloud-init metadata service datasource
-  sudo mkdir -p "${OPNFV_MNT_DIR}/etc/cloud/cloud.cfg.d"
-  echo "datasource_list: [ NoCloud, None ]" | sudo tee \
-    "${OPNFV_MNT_DIR}/etc/cloud/cloud.cfg.d/95_real_datasources.cfg"
-}
-
-function cleanup_mounts {
-  # Remove any mounts, loop and/or nbd devs created while patching base image
-  if [ -n "${OPNFV_MNT_DIR}" ] && [ -d "${OPNFV_MNT_DIR}" ]; then
-    if [ -f "${OPNFV_MNT_DIR}/boot/grub/grub.cfg" ]; then
-      # Grub thinks it's running from a live CD
-      sudo sed -i -e 's/^\s*set root=.*$//g' -e 's/^\s*loopback.*$//g' \
-        "${OPNFV_MNT_DIR}/boot/grub/grub.cfg"
-    fi
-    sudo rm -f "${OPNFV_MNT_DIR}/run/resolvconf/resolv.conf"
-    sync
-    if mountpoint -q "${OPNFV_MNT_DIR}"; then
-      sudo umount -l "${OPNFV_MNT_DIR}" || true
-    fi
-  fi
-  if [ -n "${OPNFV_LOOP_DEV}" ] && \
-    losetup "${OPNFV_LOOP_DEV}" 1>&2 > /dev/null; then
-      sudo losetup -d "${OPNFV_LOOP_DEV}"
-  fi
-  if [ -n "${OPNFV_NBD_DEV}" ]; then
-    sudo kpartx -d "${OPNFV_NBD_DEV}" || true
-    sudo qemu-nbd -d "${OPNFV_NBD_DEV}" || true
-  fi
-}
-
-function cleanup_uefi {
-  # Clean up Ubuntu boot entry if cfg01, kvm nodes online from previous deploy
-  local cmd_str="ssh ${SSH_OPTS} ${SSH_SALT}"
-  # [ ! "$(hostname)" = 'cfg01' ] || cmd_str='eval'
-  # ${cmd_str} "sudo salt -C 'kvm* or cmp*' cmd.run \
-  [ ! "$(hostname)" = 'cfg01' ] || cmd_str='eval'
-  ${cmd_str} "sudo salt -C '* and not cfg* and not mas*' cmd.run \
-    \"which efibootmgr > /dev/null 2>&1 && \
-    efibootmgr | grep -oP '(?<=Boot)[0-9]+(?=.*ubuntu)' | \
-    xargs -I{} efibootmgr --delete-bootnum --bootnum {}; \
-    rm -rf /boot/efi/*\"" || true
+  sed -e 's|---||g' -ne "s|^\($s\)\($w\)$s:$s\"\(.*\)\"$s\$|\1$fs\2$fs\3|p" \
+      -e "s|^\($s\)\($w\)$s[:-]$s\(.*\)$s\$|\1$fs\2$fs\3|p" "${pdf}" |
+  awk -F"$fs" '{
+    ret = index($0, "name:")
+    if (ret == 5) {
+      gsub("name:", "", $0)
+      print $0
+    }
+  }'
 }
 
 function cleanup_vms {
   # clean up existing nodes
-  for node in $(virsh list --name | grep -P '\w{3}\d{2}'); do
+  for node in $(virsh list --name | grep -P 'cactus'); do
     virsh destroy "${node}"
   done
-  for node in $(virsh list --name --all | grep -P '\w{3}\d{2}'); do
+  for node in $(virsh list --name --all | grep -P 'cactus'); do
     virsh domblklist "${node}" | awk '/^.da/ {print $2}' | \
       xargs --no-run-if-empty -I{} sudo rm -f {}
     # TODO command 'undefine' doesn't support option --nvram
@@ -271,95 +90,26 @@ function cleanup_vms {
 }
 
 function prepare_vms {
-  local base_image=$1; shift
-  local image_dir=$1; shift
-  local repos_pkgs_str=$1; shift # ^-sep list of repos, pkgs to install/rm
-  local build_vcp_image=$1; shift
+  local image_dir=${STORAGE_DIR}
   local vnodes=("$@")
-  local image=base_image_cactus.img
-  local vcp_image=${image%.*}_vcp.img
-  local _o=${base_image/*\/}
-  local _h=$(echo "${repos_pkgs_str}.$(md5sum "${image_dir}/${_o}")" | \
-             md5sum | cut -c -8)
-  local _tmp
 
-  cleanup_uefi
   cleanup_vms
-  get_base_image "${base_image}" "${image_dir}"
-  IFS='^' read -r -a repos_pkgs <<< "${repos_pkgs_str}"
 
-  echo "[INFO] Lookup cache / build patched base image for fingerprint: ${_h}"
-  _tmp="${image%.*}.${_h}.img"
-  if [ "${image_dir}/${_tmp}" -ef "${image_dir}/${image}" ]; then
-    echo "[INFO] Patched base image found"
-  else
-    rm -f "${image_dir}/${image%.*}"*
-    if [[ ! "${repos_pkgs_str}" =~ ^\^+$ ]]; then
-      echo "[INFO] Patching base image ..."
-      cp "${image_dir}/${_o}" "${image_dir}/${_tmp}"
-      __kernel_modules "${image_dir}"
-      mount_image "${_tmp}" "${image_dir}"
-      apt_repos_pkgs_image "${repos_pkgs[@]:0:4}"
-      cleanup_mounts
-    else
-      echo "[INFO] No patching required, using vanilla base image"
-      ln -sf "${image_dir}/${_o}" "${image_dir}/${_tmp}"
-    fi
-    ln -sf "${image_dir}/${_tmp}" "${image_dir}/${image}"
-  fi
-
-  envsubst < user-data.template > user-data.sh # CWD should be <scripts>
-
-  # Create config ISO and resize OS disk image for each foundation node VM
+  # Create vnode images and resize OS disk image for each foundation node VM
   for node in "${vnodes[@]}"; do
-    ./create-config-drive.sh -k "$(basename "${SSH_KEY}").pub" -u user-data.sh \
-       -h "${node}" "${image_dir}/cactus_${node}.iso"
-    cp "${image_dir}/${image}" "${image_dir}/cactus_${node}.qcow2"
-    qemu-img resize "${image_dir}/cactus_${node}.qcow2" 100G
-  done
-
-  # VCP VMs base image specific changes
-  if [[ ! "${repos_pkgs_str}" =~ \^{3}$ ]] && [ -n "${repos_pkgs[*]:4}" ] && \
-    [ ${build_vcp_image} -eq 1 ]; then
-    echo "[INFO] Lookup cache / build patched VCP image for md5sum: ${_h}"
-    _tmp="${vcp_image%.*}.${_h}.img"
-    if [ "${image_dir}/${_tmp}" -ef "${image_dir}/${vcp_image}" ]; then
-      echo "[INFO] Patched VCP image found"
-    else
-      echo "[INFO] Patching VCP image ..."
-      cp "${image_dir}/${image}" "${image_dir}/${_tmp}"
-      __kernel_modules "${image_dir}"
-      mount_image "${_tmp}" "${image_dir}"
-      apt_repos_pkgs_image "${repos_pkgs[@]:4:4}"
-      cleanup_mounts
-      ln -sf "${image_dir}/${_tmp}" "${image_dir}/${vcp_image}"
+    enabled="nodes_${node}_enabled"
+    if [ ${enabled} ]; then
+      is_master="nodes_${node}_cloud_native_master"
+      if [ ${is_master} ]; then
+        image=k8sm.qcow2
+      else
+        image=node.qcow2
+      fi
+      cp "${image_dir}/${image}" "${image_dir}/cactus_${node}.qcow2"
+      disk_capacity="nodes_${node}_disks_disk1_disk_capacity"
+      qemu-img resize "${image_dir}/cactus_${node}.qcow2" ${disk_capacity}
     fi
-  else
-    echo "[INFO] Needn't build VCP image[1. repos_pkgs_str=$repos_pkgs_str; \
-2. repos_pkgs[*]:4=${repos_pkgs[*]:4}; \
-3. build_vcp_image=${build_vcp_image} ]!"
-  fi
-}
-
-function jumphost_pkg_install {
-  if [ -n "$(command -v apt-get)" ]; then
-    pkg_type='deb'; pkg_cmd='sudo apt-get install -y'
-  else
-    pkg_type='rpm'; pkg_cmd='sudo yum install -y --skip-broken'
-  fi
-  eval "$(parse_yaml "./requirements_${pkg_type}.yaml")"
-  for section in 'common' "${DEPLOY_TYPE}" "$(uname -m)"; do
-    section_var="requirements_pkg_${section}[*]"
-    pkg_list+=" ${!section_var}"
   done
-  # shellcheck disable=SC2086
-  ${pkg_cmd} ${pkg_list}
-  # ZaaS
-  echo "install pkg through pip ..."
-  pip install -U cookiecutter ipaddress
-  pip install -U jinja2
-  pip list
-
 }
 
 function create_networks {

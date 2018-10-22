@@ -15,9 +15,9 @@ export TERM=xterm
 # BEGIN of variables to customize
 #
 CI_DEBUG=${CI_DEBUG:-0}; [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
-REPO_ROOT_PATH=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")
+export REPO_ROOT_PATH=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")
+export STORAGE_DIR=/var/cactus
 DEPLOY_DIR=$(cd "${REPO_ROOT_PATH}/deploy"; pwd)
-STORAGE_DIR=/var/cactus
 CACTUS_BRIDGES=('cactus_br')
 BR_NAMES=('cactus_admin')
 BASE_CONFIG_URI="file://${REPO_ROOT_PATH}/config"
@@ -82,4 +82,10 @@ notify "[NOTE] Using bridges: ${CACTUS_BRIDGES[*]}\n" 2
 # Infra setup
 generate_ssh_key
 
-build_images ${REPO_ROOT_PATH} ${STORAGE_DIR}
+build_images
+
+vnodes=`get_vnodes`
+
+parse_vnodes
+
+prepare_vms "${STORAGE_DIR}" "${vnodes[@]}"
