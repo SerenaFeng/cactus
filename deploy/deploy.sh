@@ -27,6 +27,7 @@ DRY_RUN=${DRY_RUN:-0}
 INFRA_CREATION_ONLY=${INFRA_CREATION_ONLY:-0}
 NO_DEPLOY_ENVIRONMENT=${NO_DEPLOY_ENVIRONMENT:-0}
 ERASE_ENV=${ERASE_ENV:-0}
+CPU_PASS_THROUGH=${CPU_PASS_THROUGH:-1}
 
 source "${DEPLOY_DIR}/globals.sh"
 source "${DEPLOY_DIR}/lib.sh"
@@ -84,8 +85,8 @@ notify "[NOTE] Using bridges: ${BRIDGES[*]}\n" 2
 # Expand network templates
 for tp in "${DEPLOY_DIR}/"*.template; do
   eval "cat <<-EOF
-  $(<"${tp}")
-  EOF" 2> /dev/null > "${tp%.template}"
+$(<"${tp}")
+EOF" 2> /dev/null > "${tp%.template}"
 done
 
 # Infra setup
@@ -98,3 +99,7 @@ parse_vnodes
 prepare_vms
 
 create_networks "${BRIDGES[@]}"
+
+create_vms "${CPU_PASS_THROUGH}" "${BRIDGES[@]}"
+
+start_vms

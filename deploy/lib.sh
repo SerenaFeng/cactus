@@ -111,10 +111,6 @@ function create_networks {
 }
 
 function create_vms {
-  local image_dir=$1; shift
-  # vnode data should be serialized with the following format:
-  # '<name0>,<ram0>,<vcpu0>|<name1>,<ram1>,<vcpu1>[...]'
-  IFS='|' read -r -a vnodes <<< "$1"; shift
   cpu_pass_through=$1; shift
   local vnode_networks=("$@")
 
@@ -126,16 +122,10 @@ function create_vms {
   fi
 
   # create vms with specified options
-  for serialized_vnode_data in "${vnodes[@]}"; do
-    IFS=',' read -r -a vnode_data <<< "${serialized_vnode_data}"
+  for vnode in "${vnodes[@]}"; do
 
     # prepare network args
-    net_args=" --network network=cactus_control,model=virtio"
-    if [ "${DEPLOY_TYPE:-}" = 'baremetal' ]; then
-      # 3rd interface gets connected to PXE/Admin Bridge (cfg01, mas01)
-      vnode_networks[2]="${vnode_networks[0]}"
-    fi
-    for net in "${vnode_networks[@]:1}"; do
+    for net in "${vnode_networks[@]}"; do
       net_args="${net_args} --network bridge=${net},model=virtio"
     done
 
@@ -144,31 +134,19 @@ function create_vms {
     cpu_para=""
 
     # shellcheck disable=SC2086
-    virt-install --name "${vnode_data[0]}" \
-    --ram "${vnode_data[1]}" --vcpus "${vnode_data[2]}" \
+    virt-install --name "${vnode}" \
+    --ram $(eval echo "\$nodes_${vnode}_node_memory") \
+    --vcpus $(eval echo "\$nodes_${vnode}_node_cpus")\
     ${cpu_para} --accelerate ${net_args} \
-    --disk path="${image_dir}/cactus_${vnode_data[0]}.qcow2",format=qcow2,bus=virtio,cache=none,io=native \
+    --disk path="${STORAGE_DIR}/cactus_${vnode}.qcow2",format=qcow2,bus=virtio,cache=none,io=native \
     --os-type linux --os-variant none \
     --boot hd --vnc --console pty --autostart --noreboot \
-    --disk path="${image_dir}/cactus_${vnode_data[0]}.iso",device=cdrom \
     --noautoconsole \
     ${virt_extra_args}
   done
 }
 
-function update_cactus_control_network {
-  # set static ip address for salt master node, MaaS node
-  local cmac=$(virsh domiflist cfg01 2>&1| awk '/cactus_control/ {print $5; exit}')
-  local amac=$(virsh domiflist mas01 2>&1| awk '/cactus_control/ {print $5; exit}')
-  virsh net-update "cactus_control" add ip-dhcp-host \
-    "<host mac='${cmac}' name='cfg01' ip='${SALT_MASTER}'/>" --live --config
-  [ -z "${amac}" ] || virsh net-update "cactus_control" add ip-dhcp-host \
-    "<host mac='${amac}' name='mas01' ip='${MAAS_IP}'/>" --live --config
-}
-
 function start_vms {
-  local vnodes=("$@")
-
   # start vms
   for node in "${vnodes[@]}"; do
     virsh start "${node}"
