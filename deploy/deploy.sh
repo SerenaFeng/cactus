@@ -18,8 +18,8 @@ CI_DEBUG=${CI_DEBUG:-0}; [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
 export REPO_ROOT_PATH=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")
 export STORAGE_DIR=/var/cactus
 DEPLOY_DIR=$(cd "${REPO_ROOT_PATH}/deploy"; pwd)
-CACTUS_BRIDGES=('cactus_br')
-BR_NAMES=('cactus_admin')
+BRIDGES=('cactus_admin' 'cactus_mgmt' 'cactus_public')
+BR_NAMES=('admin' 'mgmt' 'public')
 BASE_CONFIG_URI="file://${REPO_ROOT_PATH}/config"
 LOCAL_IDF=${REPO_ROOT_PATH}/config/lab/basic/idf.yaml
 SCENARIO=${REPO_ROOT_PATH}/config/scenario/virtual/k8s-calico-noha.yaml
@@ -61,6 +61,8 @@ export CLUSTER_DOMAIN=${cluster_domain}
 eval "$(parse_yaml "${LOCAL_IDF}")"
 BR_NETS=( \
     "${idf_cactus_jumphost_fixed_ips_admin}" \
+    "${idf_cactus_jumphost_fixed_ips_mgmt}" \
+    "${idf_cactus_jumphost_fixed_ips_public}" \
 )
 
 for ((i = 0; i < ${#BR_NETS[@]}; i++)); do
@@ -68,16 +70,23 @@ for ((i = 0; i < ${#BR_NETS[@]}; i++)); do
     if [ -n "${br_jump}" ] && [ "${br_jump}" != 'None' ] && \
        [ -d "/sys/class/net/${br_jump}/bridge" ]; then
             notify_n "[OK] Bridge found for '${BR_NAMES[i]}': ${br_jump}\n" 2
-            CACTUS_BRIDGES[${i}]="${br_jump}"
+            BRIDGES[${i}]="${br_jump}"
     elif [ -n "${BR_NETS[i]}" ]; then
         bridge=$(ip addr | awk "/${BR_NETS[i]%.*}./ {print \$NF; exit}")
         if [ -n "${bridge}" ] && [ -d "/sys/class/net/${bridge}/bridge" ]; then
             notify_n "[OK] Bridge found for net ${BR_NETS[i]%.*}.0: ${bridge}\n" 2
-            CACTUS_BRIDGES[${i}]="${bridge}"
+            BRIDGES[${i}]="${bridge}"
         fi
     fi
 done
-notify "[NOTE] Using bridges: ${CACTUS_BRIDGES[*]}\n" 2
+notify "[NOTE] Using bridges: ${BRIDGES[*]}\n" 2
+
+# Expand network templates
+for tp in "${DEPLOY_DIR}/"*.template; do
+  eval "cat <<-EOF
+  $(<"${tp}")
+  EOF" 2> /dev/null > "${tp%.template}"
+done
 
 # Infra setup
 generate_ssh_key
@@ -87,3 +96,5 @@ build_images
 parse_vnodes
 
 prepare_vms
+
+create_networks "${BRIDGES[@]}"

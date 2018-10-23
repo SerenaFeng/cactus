@@ -95,10 +95,8 @@ function prepare_vms {
 
 function create_networks {
   local vnode_networks=("$@")
-  # create required networks, including constant "cactus_control"
-  # FIXME(alav): since we renamed "pxe" to "cactus_control", we need to make sure
-  # we delete the old "pxe" virtual network, or it would cause IP conflicts.
-  for net in "pxe" "cactus_control" "${vnode_networks[@]}"; do
+  # create required networks
+  for net in "${vnode_networks[@]}"; do
     if virsh net-info "${net}" >/dev/null 2>&1; then
       virsh net-destroy "${net}" || true
       virsh net-undefine "${net}"
