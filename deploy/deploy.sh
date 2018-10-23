@@ -84,8 +84,6 @@ generate_ssh_key
 
 build_images
 
-vnodes=`get_vnodes`
-
 parse_vnodes
 
-prepare_vms "${STORAGE_DIR}" "${vnodes[@]}"
+prepare_vms

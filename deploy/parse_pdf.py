@@ -30,9 +30,17 @@ def joint_item(prefix, left):
         variables += ' {}={}'.format(prefix, left)
 
 
+def get_names(d):
+    names = ':'.join([node.get('name') for node in d.get('nodes')])
+    global variables
+    variables += ' nodes={}'.format(names)
+
+
 with open(ARGS.yaml) as _:
     _DICT = yaml.load(_, Loader=LOADER)
 
 joint_item('', _DICT)
 
+get_names(_DICT)
 sys.exit(variables)
+

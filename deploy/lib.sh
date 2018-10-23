@@ -32,7 +32,6 @@ function build_images {
   local builder_image=cactus/dib:latest
   local dib_name=cactus_image_builder
   local sshpub="${SSH_KEY}.pub"
-  build_builder_image ${builder_image}
 
   [[ "$(docker images -q ${builder_image} 2>/dev/null)" != "" ]] || {
     echo "build diskimage_builder image... "
@@ -53,27 +52,8 @@ function build_images {
 }
 
 function parse_vnodes {
-  eval $(python deploy/parse_pdf.py -y ${REPO_ROOT_PATH}/config/lab/basic/lab.yaml 2>&1)
-}
-
-function get_vnodes {
-  local pdf="{REPO_ROOT_PATH}/config/lab/basic/lab.yaml"
-  local s
-  local w
-  local fs
-  s='[[:space:]]*'
-  w='[a-zA-Z0-9_]*'
-  fs="$(echo @|tr @ '\034')"
-
-  sed -e 's|---||g' -ne "s|^\($s\)\($w\)$s:$s\"\(.*\)\"$s\$|\1$fs\2$fs\3|p" \
-      -e "s|^\($s\)\($w\)$s[:-]$s\(.*\)$s\$|\1$fs\2$fs\3|p" "${pdf}" |
-  awk -F"$fs" '{
-    ret = index($0, "name:")
-    if (ret == 5) {
-      gsub("name:", "", $0)
-      print $0
-    }
-  }'
+  eval $(python ${REPO_ROOT_PATH}/deploy/parse_pdf.py -y ${REPO_ROOT_PATH}/config/lab/basic/lab.yaml 2>&1)
+  IFS=':' read -a vnodes <<< "${nodes}"
 }
 
 function cleanup_vms {
@@ -91,23 +71,24 @@ function cleanup_vms {
 
 function prepare_vms {
   local image_dir=${STORAGE_DIR}
-  local vnodes=("$@")
 
   cleanup_vms
 
   # Create vnode images and resize OS disk image for each foundation node VM
   for node in "${vnodes[@]}"; do
     enabled="nodes_${node}_enabled"
-    if [ ${enabled} ]; then
+    if [ "${!enabled}" == "True" ]; then
       is_master="nodes_${node}_cloud_native_master"
-      if [ ${is_master} ]; then
-        image=k8sm.qcow2
+      if [ "${!is_master}" == "True" ]; then
+        echo "preparing for master vnode [${node}]"
+        image="k8s/k8sm.qcow2"
       else
-        image=node.qcow2
+        echo "preparing for minion vnode [${node}]"
+        image="k8s/node.qcow2"
       fi
       cp "${image_dir}/${image}" "${image_dir}/cactus_${node}.qcow2"
       disk_capacity="nodes_${node}_disks_disk1_disk_capacity"
-      qemu-img resize "${image_dir}/cactus_${node}.qcow2" ${disk_capacity}
+      qemu-img resize "${image_dir}/cactus_${node}.qcow2" ${!disk_capacity}
     fi
   done
 }
