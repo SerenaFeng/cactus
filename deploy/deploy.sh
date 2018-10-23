@@ -84,8 +84,8 @@ notify "[NOTE] Using bridges: ${BRIDGES[*]}\n" 2
 # Expand network templates
 for tp in "${DEPLOY_DIR}/"*.template; do
   eval "cat <<-EOF
-  $(<"${tp}")
-  EOF" 2> /dev/null > "${tp%.template}"
+$(<"${tp}")
+EOF" 2> /dev/null > "${tp%.template}"
 done
 
 # Infra setup

@@ -2,3 +2,5 @@ cactus.rsa
 cactus.rsa.pub
 test.sh
 eval_pdf.sh
+*.swp
+net_cactus_*.xml
