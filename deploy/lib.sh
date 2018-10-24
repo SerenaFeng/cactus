@@ -122,6 +122,11 @@ function create_vms {
 
   # create vms with specified options
   for vnode in "${vnodes[@]}"; do
+    local hostname=$(eval echo "\$nodes_${vnode}_hostname")
+    local node_extra=""
+    if [ -n "${hostname}" ]; then
+      node_extra="--extra hostname=${hostname}"
+    fi
 
     # prepare network args
     net_args==""
@@ -142,7 +147,24 @@ function create_vms {
     --os-type linux --os-variant none \
     --boot hd --vnc --console pty --autostart --noreboot \
     --noautoconsole \
-    ${virt_extra_args}
+    ${virt_extra_args} ${node_extra}
+  done
+}
+
+function get_node_ip {
+  local vnode=${1}
+  local node_id=$(eval echo "\$nodes_${vnode}_node_id")
+  echo $(eval echo "${idf_cactus_jumphost_fixed_ips_admin%.*}.${node_id}")
+}
+
+function update_admin_network {
+  for vnode in "${vnodes[@]}"; do
+    local admin_br="${idf_cactus_jumphost_bridges_admin}"
+    local guest="cactus_${vnode}"
+    local ip=$(get_node_ip ${vnode})
+    local cmac=$(virsh domiflist ${guest} 2>&1| awk '/${admin_br}/ {print $5; exit}')
+    virsh net-update "${admin_br}" add ip-dhcp-host \
+      "<host mac='${cmac}' name='${guest}' ip='${ip}'/>" --live --config
   done
 }
 
@@ -159,18 +181,21 @@ function check_connection {
   local sleep_time=5
 
   set +e
-  echo '[INFO] Attempting to get into Salt master ...'
+  echo '[INFO] Attempting to get into master ...'
 
-  # wait until ssh on Salt master is available
+  # wait until ssh on master is available
   # shellcheck disable=SC2034
-  for attempt in $(seq "${total_attempts}"); do
-    # shellcheck disable=SC2086
-    ssh ${SSH_OPTS} "ubuntu@${SALT_MASTER}" uptime
-    case $? in
-      0) echo "${attempt}> Success"; break ;;
-      *) echo "${attempt}/${total_attempts}> ssh server ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
-    esac
-    sleep $sleep_time
+  for vnode in "${vnodes[@]}"; do
+    if [ $(eval echo "\$nodes_${node}_cloud_native_master") == "True" ]; then
+      for attempt in $(seq "${total_attempts}"); do
+        ssh ${SSH_OPTS} "cactus@$(get_node_ip ${vnode})" uptime
+        case $? in
+          0) echo "${attempt}> Success"; break ;;
+          *) echo "${attempt}/${total_attempts}> ssh server ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
+        esac
+        sleep $sleep_time
+      done
+    fi
   done
   set -e
 }

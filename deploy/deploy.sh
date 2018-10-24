@@ -102,4 +102,8 @@ create_networks "${BRIDGES[@]}"
 
 create_vms "${CPU_PASS_THROUGH}" "${BRIDGES[@]}"
 
+update_admin_network
+
 start_vms
+
+check_connection
