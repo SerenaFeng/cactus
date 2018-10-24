@@ -75,10 +75,8 @@ function prepare_vms {
 
   # Create vnode images and resize OS disk image for each foundation node VM
   for node in "${vnodes[@]}"; do
-    enabled="nodes_${node}_enabled"
-    if [ "${!enabled}" == "True" ]; then
-      is_master="nodes_${node}_cloud_native_master"
-      if [ "${!is_master}" == "True" ]; then
+    if [ $(eval echo "\$nodes_${node}_enabled") == "True" ]; then
+      if [ $(is_master ${node}) ]; then
         echo "preparing for master vnode [${node}]"
         image="k8s/k8sm.qcow2"
       else
@@ -145,12 +143,6 @@ function create_vms {
   done
 }
 
-function get_node_ip {
-  local vnode=${1}
-  local node_id=$(eval echo "\$nodes_${vnode}_node_id")
-  echo $(eval echo "${idf_cactus_jumphost_fixed_ips_admin%.*}.${node_id}")
-}
-
 function update_admin_network {
   for vnode in "${vnodes[@]}"; do
     local admin_br="${idf_cactus_jumphost_bridges_admin}"
@@ -180,9 +172,9 @@ function check_connection {
   # wait until ssh on master is available
   # shellcheck disable=SC2034
   for vnode in "${vnodes[@]}"; do
-    if [ $(eval echo "\$nodes_${node}_cloud_native_master") == "True" ]; then
+    if is_master ${vnode}; then
       for attempt in $(seq "${total_attempts}"); do
-        ssh ${SSH_OPTS} "cactus@$(get_node_ip ${vnode})" uptime
+        ssh_vnode ${vnode} uptime
         case $? in
           0) echo "${attempt}> Success"; break ;;
           *) echo "${attempt}/${total_attempts}> ssh server ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
@@ -213,6 +205,29 @@ function parse_yaml {
           printf("%s%s%s=(\"%s\")\n", "'"$prefix"'",vn, $2, $3);
       }
   }' | sed 's/_=/+=/g'
+}
+
+function get_node_ip {
+  local vnode=${1}
+  local node_id=$(eval echo "\$nodes_${vnode}_node_id")
+  echo $(eval echo "${idf_cactus_jumphost_fixed_ips_admin%.*}.${node_id}")
+}
+
+function ssh_vnode {
+  local vnode=${1}; shift
+  local cmdstr=${1}; shift
+  ssh ${SSH_OPTS} cactus@$(get_node_ip ${vnode}) bash -s -e << SSH_EXE_END
+    $cmdstr
+SSH_EXE_END
+}
+
+function is_master {
+  local vnode=${1}
+  if [ $(eval echo "\$nodes_${vnode}_cloud_native_master") == "True" ]; then
+    return 0
+  else
+    return 1
+  fi
 }
 
 function wait_for {
