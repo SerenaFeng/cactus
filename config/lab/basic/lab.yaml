@@ -18,7 +18,7 @@ nodes:
   # of minions in cookiecutter.json/yaml
   - name: master01
     enabled: True
-    node_id: 1
+    node_id: 2
     hostname: k8s-master01
     cloud_native:
       enabled: true
@@ -38,7 +38,7 @@ nodes:
       - mac_address: "FF:EE:DD:CC:BB:A1"
 #  - name: minion01
 #    enabled: True
-#    node_id: 2
+#    node_id: 3
 #    hostname: k8s-minion01
 #    cloud_native:
 #      enabled: true

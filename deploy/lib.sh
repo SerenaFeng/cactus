@@ -122,14 +122,8 @@ function create_vms {
 
   # create vms with specified options
   for vnode in "${vnodes[@]}"; do
-    local hostname=$(eval echo "\$nodes_${vnode}_hostname")
-    local node_extra=""
-    if [ -n "${hostname}" ]; then
-      node_extra="--extra hostname=${hostname}"
-    fi
-
     # prepare network args
-    net_args==""
+    net_args=""
     for net in "${vnode_networks[@]}"; do
       net_args="${net_args} --network bridge=${net},model=virtio"
     done
@@ -147,7 +141,7 @@ function create_vms {
     --os-type linux --os-variant none \
     --boot hd --vnc --console pty --autostart --noreboot \
     --noautoconsole \
-    ${virt_extra_args} ${node_extra}
+    ${virt_extra_args}
   done
 }
 
@@ -162,7 +156,7 @@ function update_admin_network {
     local admin_br="${idf_cactus_jumphost_bridges_admin}"
     local guest="cactus_${vnode}"
     local ip=$(get_node_ip ${vnode})
-    local cmac=$(virsh domiflist ${guest} 2>&1| awk '/${admin_br}/ {print $5; exit}')
+    local cmac=$(virsh domiflist ${guest} 2>&1| awk -v br=${admin_br} '/br/ {print $5; exit}')
     virsh net-update "${admin_br}" add ip-dhcp-host \
       "<host mac='${cmac}' name='${guest}' ip='${ip}'/>" --live --config
   done

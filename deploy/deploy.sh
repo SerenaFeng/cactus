@@ -1,13 +1,7 @@
 #!/usr/bin/env bash
 
 do_exit () {
-    local RC=$?
-    cleanup_mounts > /dev/null 2>&1
-    if [ ${RC} -eq 0 ]; then
-        notify_n "[OK] ZaaS: zaas installation finished succesfully!\n\n" 2
-    else
-        notify_n "[ERROR] ZaaS: zaas installation threw a fatal error!\n\n"
-    fi
+  notify_n "[OK] ZaaS: zaas installation finished succesfully!\n\n" 2
 }
 
 export TERM=xterm
@@ -36,8 +30,8 @@ source "${DEPLOY_DIR}/lib_template.sh"
 # BEGIN of main
 #
 if [[ "$(sudo whoami)" != 'root' ]]; then
-    notify_e "[ERROR] This script requires sudo rights!"
-    exit 1
+  notify_e "[ERROR] This script requires sudo rights!"
+  exit 1
 fi
 
 mkdir -p ${STORAGE_DIR}
@@ -48,7 +42,7 @@ trap do_exit SIGINT SIGTERM EXIT
 pushd "${DEPLOY_DIR}" > /dev/null
 
 if ! virsh list >/dev/null 2>&1; then
-    notify_e "[ERROR] This script requires hypervisor access!"
+  notify_e "[ERROR] This script requires hypervisor access!"
 fi
 
 # Get required infra deployment data
@@ -67,18 +61,18 @@ BR_NETS=( \
 )
 
 for ((i = 0; i < ${#BR_NETS[@]}; i++)); do
-    br_jump=$(eval echo "\$idf_cactus_jumphost_bridges_${BR_NAMES[i]}")
-    if [ -n "${br_jump}" ] && [ "${br_jump}" != 'None' ] && \
-       [ -d "/sys/class/net/${br_jump}/bridge" ]; then
-            notify_n "[OK] Bridge found for '${BR_NAMES[i]}': ${br_jump}\n" 2
-            BRIDGES[${i}]="${br_jump}"
-    elif [ -n "${BR_NETS[i]}" ]; then
-        bridge=$(ip addr | awk "/${BR_NETS[i]%.*}./ {print \$NF; exit}")
-        if [ -n "${bridge}" ] && [ -d "/sys/class/net/${bridge}/bridge" ]; then
-            notify_n "[OK] Bridge found for net ${BR_NETS[i]%.*}.0: ${bridge}\n" 2
-            BRIDGES[${i}]="${bridge}"
-        fi
+  br_jump=$(eval echo "\$idf_cactus_jumphost_bridges_${BR_NAMES[i]}")
+  if [ -n "${br_jump}" ] && [ "${br_jump}" != 'None' ] && \
+     [ -d "/sys/class/net/${br_jump}/bridge" ]; then
+    notify_n "[OK] Bridge found for '${BR_NAMES[i]}': ${br_jump}\n" 2
+    BRIDGES[${i}]="${br_jump}"
+  elif [ -n "${BR_NETS[i]}" ]; then
+    bridge=$(ip addr | awk "/${BR_NETS[i]%.*}./ {print \$NF; exit}")
+    if [ -n "${bridge}" ] && [ -d "/sys/class/net/${bridge}/bridge" ]; then
+      notify_n "[OK] Bridge found for net ${BR_NETS[i]%.*}.0: ${bridge}\n" 2
+      BRIDGES[${i}]="${bridge}"
     fi
+  fi
 done
 notify "[NOTE] Using bridges: ${BRIDGES[*]}\n" 2
 

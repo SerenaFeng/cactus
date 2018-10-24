@@ -10,46 +10,69 @@ MAKEFLAGS += --no-builtin-rules
 CONFDIR ?= ./kube-config
 OBJS := calico dashboard example flannel heapster hostpath metrics-server
 HELP := =y print this help information
-.phone: deploy
 
-define DEPLOY_HELP
-# Deploy objects.
+define INSTALL_HELP
+# Deploy k8s locally or on vms.
 #
 # Args:
 #   help: $(HELP)
-#   what: Object to deploy, supported objects: $(OBJS)
+#   where: local or vms
 #   
 # Example:
-#   make deploy what=metrics-server
+#   make install where=vms
+#   
+endef
+.phone: install
+ifeq ($(help), y)
+install:
+	@echo "$$INSTALL_HELP"
+else ifeq ($(where), local)
+install:
+	bash k8s/k8sm.sh
+else
+install:
+	sudo CI_DEBUG=True bash deploy/deploy.sh
+endif
+
+define APPLY_HELP
+# Apply objects on k8s.
+#
+# Args:
+#   help: $(HELP)
+#   what: Object to apply, supported objects: $(OBJS)
+#
+# Example:
+#   make apply what=metrics-server
 #   
 endef
 
+.phone: apply
 ifeq ($(help), y)
-deploy:
-	@echo "$$DEPLOY_HELP"
+apply:
+	@echo "$$APPLY_HELP"
 else
-deploy:
+apply:
 	kubectl apply -f $(CONFDIR)/$(what)
 endif
 
-.phone: remove
 
 define REMOVE_HELP
 # Remove objects.
 #
 # Args:
 #   help: $(HELP)
-#   what: Object to remove, supported objects: $(OBJS)
+#   what: Object to delete, supported objects: $(OBJS)
 #   
 # Example:
-#   make remove what=metrics-server
+#   make delete what=metrics-server
 #   
 endef
+.phone: delete
 ifeq ($(help), y)
-remove:
+delete:
 	@echo "$$REMOVE_HELP"
 else
-remove:
+delete:
 	kubectl delete -f $(CONFDIR)/$(what)
 endif
 
