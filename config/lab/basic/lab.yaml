@@ -28,24 +28,24 @@ nodes:
       arch: x86_64
       cpus: 2
       cores: 8
-      memory: 32G
-      disk: 20G
+      memory: 20480
+      disk: 40G
     disks: &disks
       - name: 'disk1'
-        disk_capacity: 40G
+        disk_capacity: 80G
         disk_type: hdd
     interfaces:
       - mac_address: "FF:EE:DD:CC:BB:A1"
-  - name: minion01
-    enabled: True
-    node_id: 2
-    hostname: k8s-minion01
-    cloud_native:
-      enabled: true
-      master: false
-    labels:
-      mostuse: true
-    node: *nodeparams
-    disks: *disks
-    interfaces:
-      - mac_address: "FF:EE:DD:CC:BB:A2"
+#  - name: minion01
+#    enabled: True
+#    node_id: 2
+#    hostname: k8s-minion01
+#    cloud_native:
+#      enabled: true
+#      master: false
+#    labels:
+#      mostuse: true
+#    node: *nodeparams
+#    disks: *disks
+#    interfaces:
+#      - mac_address: "FF:EE:DD:CC:BB:A2"

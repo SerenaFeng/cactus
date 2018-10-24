@@ -9,7 +9,7 @@
 
 # Global variables
 export CI_DEBUG=${CI_DEBUG:-0}; [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
-export SSH_KEY=${SSH_KEY:-"/var/lib/cactus/cactus.rsa"}
+export SSH_KEY=${SSH_KEY:-"${STORAGE_DIR}/cactus.rsa"}
 export SALT_MASTER=${INSTALLER_IP:-10.10.0.2}
 export SALT_MASTER_USER=${SALT_MASTER_USER:-ubuntu}
 export MAAS_IP=${MAAS_IP:-${SALT_MASTER%.*}.3}

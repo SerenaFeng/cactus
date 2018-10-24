@@ -5,7 +5,7 @@ cd /imagedata
 
 K8S_TMP=/tmp/k8s
 K8S_YUM_REPO=/tmp/k8s/k8s.repo
-K8S_PUBKEY=/tmp/k8s/id_rsa.pub
+K8S_PUBKEY=/imagedata/cactus.rsa.pub
 
 [[ -d $K8S_TMP ]] || mkdir -p $K8S_TMP
 
@@ -29,7 +29,8 @@ function create_k8sm_centos7-image {
     image_format=${2:-qcow2}
 
     DIB_YUM_REPO_CONF=$K8S_YUM_REPO \
-    DIB_DEV_USER_USERNAME=serena \
+    DIB_DEV_USER_USERNAME=cactus \
+    DIB_DEV_USER_PASSWORD=cactus \
     DIB_DEV_USER_PWDLESS_SUDO=true \
     DIB_DEV_USER_AUTHORIZED_KEYS=$K8S_PUBKEY \
     disk-image-create centos7 vm dhcp-all-interfaces \
@@ -45,7 +46,8 @@ function create_node_centos7_image {
     image_format=${2:-qcow2}
 
     DIB_YUM_REPO_CONF=$K8S_YUM_REPO \
-    DIB_DEV_USER_USERNAME=serena \
+    DIB_DEV_USER_USERNAME=cactus \
+    DIB_DEV_USER_PASSWORD=cactus \
     DIB_DEV_USER_PWDLESS_SUDO=true \
     DIB_DEV_USER_AUTHORIZED_KEYS=$K8S_PUBKEY \
     disk-image-create centos7 vm dhcp-all-interfaces \

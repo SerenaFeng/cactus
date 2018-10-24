@@ -35,7 +35,7 @@ function build_images {
 
   [[ "$(docker images -q ${builder_image} 2>/dev/null)" != "" ]] || {
     echo "build diskimage_builder image... "
-    pushd ${REPO_ROOT_PATH}/images/docker/dib
+    pushd ${REPO_ROOT_PATH}/docker/dib
     docker build -t ${builder_image} .
     popd
   }
@@ -44,7 +44,6 @@ function build_images {
   docker run -it \
            --name ${dib_name} \
            -v ${STORAGE_DIR}:/imagedata \
-           -v ${sshpub}:/id_rsa.pub \
            --privileged \
            --rm \
            ${builder_image} \
@@ -87,7 +86,7 @@ function prepare_vms {
         image="k8s/node.qcow2"
       fi
       cp "${image_dir}/${image}" "${image_dir}/cactus_${node}.qcow2"
-      disk_capacity="nodes_${node}_disks_disk1_disk_capacity"
+      disk_capacity="nodes_${node}_node_disk"
       qemu-img resize "${image_dir}/cactus_${node}.qcow2" ${!disk_capacity}
     fi
   done
@@ -125,6 +124,7 @@ function create_vms {
   for vnode in "${vnodes[@]}"; do
 
     # prepare network args
+    net_args==""
     for net in "${vnode_networks[@]}"; do
       net_args="${net_args} --network bridge=${net},model=virtio"
     done
@@ -134,8 +134,8 @@ function create_vms {
     cpu_para=""
 
     # shellcheck disable=SC2086
-    virt-install --name "${vnode}" \
-    --ram $(eval echo "\$nodes_${vnode}_node_memory") \
+    virt-install --name "cactus_${vnode}" \
+    --memory $(eval echo "\$nodes_${vnode}_node_memory") \
     --vcpus $(eval echo "\$nodes_${vnode}_node_cpus")\
     ${cpu_para} --accelerate ${net_args} \
     --disk path="${STORAGE_DIR}/cactus_${vnode}.qcow2",format=qcow2,bus=virtio,cache=none,io=native \
@@ -149,7 +149,7 @@ function create_vms {
 function start_vms {
   # start vms
   for node in "${vnodes[@]}"; do
-    virsh start "${node}"
+    virsh start "cactus_${node}"
     sleep $((RANDOM%5+1))
   done
 }
