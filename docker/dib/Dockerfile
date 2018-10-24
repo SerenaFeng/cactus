@@ -6,7 +6,8 @@ RUN yum update -y \
  && yum install -y iproute iproute-doc vim \
  && yum clean all \
  && pip install -U git+https://github.com/openstack/diskimage-builder.git
-ADD /create_image.sh /create_image.sh
+ADD elements /elements
+ADD create_image.sh /create_image.sh
 RUN chmod +x /create_image.sh
 
 CMD ["/bin/bash"]

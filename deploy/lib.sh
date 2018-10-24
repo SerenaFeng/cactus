@@ -76,7 +76,7 @@ function prepare_vms {
   # Create vnode images and resize OS disk image for each foundation node VM
   for node in "${vnodes[@]}"; do
     if [ $(eval echo "\$nodes_${node}_enabled") == "True" ]; then
-      if [ $(is_master ${node}) ]; then
+      if is_master ${node}; then
         echo "preparing for master vnode [${node}]"
         image="k8s/k8sm.qcow2"
       else
@@ -373,4 +373,33 @@ function restart_salt_service {
 
   echo "Restart ${service_minion} ${service_master} successfully!"
 
+}
+
+function deploy_k8s {
+  for vnode in "${vnodes[@]}"; do
+    if is_master ${vnode};then
+      ssh ${SSH_OPTS} cactus@$(get_node_ip ${vnode}) bash -s -e << DEPLOY_K8S_END
+      sudo -i
+      set -e
+      set -x
+
+      echo "Begin to deploy ${vnode}"
+      echo -n "Make sure docker is started..."
+      sudo systemctl restart docker
+
+      echo -n "Deploy k8s with kubeadm, this will take a few minutes, please wait..."
+      sudo kubeadm init --pod-network-cidr 10.244.0.1/16 --kubernetes-version v1.12.1
+
+      echo -n "Configure kubectl"
+      mkdir -p $HOME/.kube
+      sudo cp -f /etc/kubernetes/admin.conf $HOME/.kube/config
+      sudo chown $(id -u):$(id -g) $HOME/.kube/config
+      kubectl taint nodes --all node-role.kubernetes.io/master-
+
+      echo -n "Apply CNI..."
+      kubectl apply -f https://raw.githubusercontent.com/SerenaFeng/cactus/master/kube-config/calico/rbac-kdd.yaml
+      kubectl apply -f https://raw.githubusercontent.com/SerenaFeng/cactus/master/kube-config/calico/calico.yaml
+DEPLOY_K8S_END
+    fi
+  done
 }
