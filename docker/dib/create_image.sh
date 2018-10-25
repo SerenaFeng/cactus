@@ -35,7 +35,7 @@ function create_k8sm_centos7_image {
     DIB_DEV_USER_PWDLESS_SUDO=true \
     DIB_DEV_USER_AUTHORIZED_KEYS=$K8S_PUBKEY \
     disk-image-create centos7 vm dhcp-all-interfaces \
-    cloud-init-nocloud devuser \
+    cloud-init-nocloud devuser install-static cactus-static \
     -p kubelet,kubeadm,kubectl,docker,vim \
     -o ${image_name} -t ${image_format}
 
@@ -46,19 +46,20 @@ function create_node_centos7_image {
     image_name=${1:-node_centos7.qcow2}
     image_format=${2:-qcow2}
 
+    ELEMENTS_PATH=/elements \
     DIB_YUM_REPO_CONF=$K8S_YUM_REPO \
     DIB_DEV_USER_USERNAME=cactus \
     DIB_DEV_USER_PASSWORD=cactus \
     DIB_DEV_USER_PWDLESS_SUDO=true \
     DIB_DEV_USER_AUTHORIZED_KEYS=$K8S_PUBKEY \
     disk-image-create centos7 vm dhcp-all-interfaces \
-    cloud-init-nocloud devuser \
+    cloud-init-nocloud devuser install-static cactus-static \
     -p kubelet,docker,vim\
     -o ${image_name} -t ${image_format}
 }
 
 #for image_item in $( set | awk '{FS="="}  /^VM_BASE_IMAGE/ {print $2}' ); do
-for image_item in k8s/k8sm.qcow2 k8s/node.qcow2; do
+for image_item in k8s/k8sm.qcow2; do
     echo "Image [${image_item}] will be created...."
 
     [[ -f ${image_item} ]] && {

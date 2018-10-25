@@ -102,5 +102,4 @@ start_vms
 
 check_connection
 
-echo "Begin to deploy k8s"
-wait_for 3 "./k8s.sh"
+deploy_k8s

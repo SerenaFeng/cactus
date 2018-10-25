@@ -384,7 +384,9 @@ function deploy_k8s {
       set -x
 
       echo "Begin to deploy ${vnode}"
-      echo -n "Make sure docker is started..."
+      echo -n "Make sure docker&kubelet is ready..."
+      sudo systemctl enable docker.service
+      sudo systemctl enable kubelet.service
       sudo systemctl restart docker
 
       echo -n "Deploy k8s with kubeadm, this will take a few minutes, please wait..."
