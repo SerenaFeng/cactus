@@ -78,10 +78,10 @@ function prepare_vms {
     if [ $(eval echo "\$nodes_${node}_enabled") == "True" ]; then
       if is_master ${node}; then
         echo "preparing for master vnode [${node}]"
-        image="k8s/k8sm.qcow2"
+        image="k8s/master.qcow2"
       else
         echo "preparing for minion vnode [${node}]"
-        image="k8s/node.qcow2"
+        image="k8s/minion.qcow2"
       fi
       cp "${image_dir}/${image}" "${image_dir}/cactus_${node}.qcow2"
       disk_capacity="nodes_${node}_node_disk"

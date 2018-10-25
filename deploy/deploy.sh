@@ -26,6 +26,7 @@ CPU_PASS_THROUGH=${CPU_PASS_THROUGH:-1}
 source "${DEPLOY_DIR}/globals.sh"
 source "${DEPLOY_DIR}/lib.sh"
 source "${DEPLOY_DIR}/lib_template.sh"
+source "${DEPLOY_DIR}/k8s.sh"
 
 # BEGIN of main
 #
