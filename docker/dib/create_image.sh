@@ -46,6 +46,7 @@ function create_minion_centos7_image {
     image_name=${1:-minion.qcow2}
     image_format=${2:-qcow2}
 
+    ELEMENTS_PATH=/elements \
     DIB_YUM_REPO_CONF=$K8S_YUM_REPO \
     DIB_DEV_USER_USERNAME=cactus \
     DIB_DEV_USER_PASSWORD=cactus \

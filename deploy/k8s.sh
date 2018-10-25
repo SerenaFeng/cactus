@@ -13,7 +13,7 @@ function get_master {
 }
 
 function get_kube_join {
-  KUBE_JOIN=$(kube_ssh_exc "sudo kubeadm token create --print-join-command")
+  KUBE_JOIN=$(master_exc "sudo kubeadm token create --print-join-command")
 }
 
 function master_exc {
@@ -30,7 +30,7 @@ function wait_ready {
     master_exc "${KUBE_EXC} get node ${vnode} | tail -1 | grep -v NotReady | grep Ready"
     case $? in
       0) echo "${attempt}> Success"; break ;;
-      *) echo "${attempt}/${total_attempts}> master ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
+      *) echo "${attempt}/${total_attempts}> ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
     esac
     sleep ${sleep_time}
   done
@@ -39,7 +39,7 @@ function wait_ready {
 function deploy_master {
   for vnode in "${vnodes[@]}"; do
     if is_master ${vnode}; then
-      echo "Begin deploying master ${vnode} at ...... `date`"
+      echo "Begin deploying master ${vnode} ... "
       ssh ${SSH_OPTS} cactus@$(get_node_ip ${vnode}) bash -s -e << DEPLOY_END
       sudo -i
       set -e
@@ -52,7 +52,7 @@ function deploy_master {
       sudo systemctl enable kubelet.service
       sudo systemctl restart docker
 
-      echo -n "Deploy k8s with kubeadm, this will take a few minutes, please wait..."
+      echo -n "Deploy k8s with kubeadm, this will take a few minutes, please wait ..."
       sudo kubeadm init --node-name ${vnode} --pod-network-cidr 10.244.0.1/16 --kubernetes-version v1.12.1
 
       echo -n "Configure kubectl"
@@ -71,27 +71,28 @@ function deploy_minion {
    echo "Kubeadm join command is: ${KUBE_JOIN}"
 
    for vnode in "${vnodes[@]}"; do
-    [[ $(is_master ${vnode}) ]] || {
-      echo "Begin deploying minion ${vnode} ... at `date`"
+     if ! is_master ${vnode}; then
+       echo "Begin deploying minion ${vnode} ..."
 
-      ssh ${SSH_OPTS} cactus@$(get_node_ip ${vnode}) bash -s -e << DEPLOY_END
-        sudo -i
-        set -e
-        set -x
+       ssh ${SSH_OPTS} cactus@$(get_node_ip ${vnode}) bash -s -e << DEPLOY_END
+         sudo -i
+         set -e
+         set -x
 
-        echo -n "Make sure docker&kubelet is ready ..."
-        sudo groupadd docker
-        sudo usermod -aG docker cactus
-        sudo systemctl enable docker.service
-        sudo systemctl enable kubelet.service
-        sudo systemctl restart docker
+         echo -n "Make sure docker&kubelet is ready ..."
+         sudo groupadd docker
+         sudo usermod -aG docker cactus
+         sudo systemctl enable docker.service
+         sudo systemctl enable kubelet.service
+         sudo systemctl restart docker
 
-        echo -n "Begin to join cluster"
-        sudo ${KUBE_JOIN}
+         echo -n "Begin to join cluster"
+         sudo ${KUBE_JOIN} --node-name ${vnode}
 DEPLOY_END
-      echo "Finish deploying minion ${vnode} ... at `date`"
-    }
+      fi
+      echo "Finish deploying minion ${vnode} ... "
   done
+  echo "All minions are deployed"
 }
 
 function wait_all_ready {
