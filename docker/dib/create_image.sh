@@ -53,7 +53,7 @@ function create_minion_centos7_image {
     DIB_DEV_USER_AUTHORIZED_KEYS=$K8S_PUBKEY \
     disk-image-create centos7 vm dhcp-all-interfaces \
     cloud-init-nocloud devuser \
-    -p kubelet,docker,vim\
+    -p kubelet,kubeadm,docker,vim\
     -o ${image_name} -t ${image_format}
 }
 

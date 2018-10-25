@@ -103,4 +103,6 @@ start_vms
 
 check_connection
 
-deploy_k8sm
+deploy_master
+
+deploy_minion

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 KUBE_DIR=/home/cactus/.kube
-KUBEXC="kubectl --kubeconfig ${KUBE_DIR}/config"
+KUBE_EXC="kubectl --kubeconfig ${KUBE_DIR}/config"
+KUBE_JOIN=""
 
 function wait_ready {
   vnode=${1}
@@ -13,12 +14,12 @@ function wait_ready {
     fi
   done
 
-  echo "Wait for ${vnode} to be ready....."
+  echo "Wait for ${vnode} to be ready ....."
   total_attempts=120
   sleep_time=15
   for attempt in $(seq "${total_attempts}"); do
     ssh ${SSH_OPTS} cactus@${master} bash -s -e << WAIT_READY
-    ${KUBEXC} get node ${vnode} | tail -1 | grep -v NotReady | grep Ready
+    ${KUBE_EXC} get node ${vnode} | tail -1 | grep -v NotReady | grep Ready
 WAIT_READY
     case $? in
       0) echo "${attempt}> Success"; break ;;
@@ -28,18 +29,16 @@ WAIT_READY
   done
 }
 
-function deploy_k8sm {
-  KUBE_DIR=/home/cactus/.kube
-  KUBEXC="kubectl --kubeconfig ${KUBE_DIR}/config"
+function deploy_master {
   for vnode in "${vnodes[@]}"; do
-    if is_master ${vnode};then
+    if is_master ${vnode}; then
       echo "Begin deploying master ${vnode} at ...... `date`"
       ssh ${SSH_OPTS} cactus@$(get_node_ip ${vnode}) bash -s -e << DEPLOY_END
       sudo -i
       set -e
       set -x
 
-      echo -n "Make sure docker&kubelet is ready..."
+      echo -n "Make sure docker&kubelet is ready ..."
       sudo groupadd docker
       sudo usermod -aG docker cactus
       sudo systemctl enable docker.service
@@ -53,11 +52,11 @@ function deploy_k8sm {
       mkdir -p ${KUBE_DIR}
       sudo cp -f /etc/kubernetes/admin.conf ${KUBE_DIR}/config
       sudo chown 1000:1000 ${KUBE_DIR}/config
-      ${KUBEXC} taint nodes --all node-role.kubernetes.io/master-
+      ${KUBE_EXC} taint nodes --all node-role.kubernetes.io/master-
 
       echo -n "Apply CNI..."
-      ${KUBEXC} apply -f https://raw.githubusercontent.com/SerenaFeng/cactus/master/kube-config/calico/rbac-kdd.yaml
-      ${KUBEXC} apply -f https://raw.githubusercontent.com/SerenaFeng/cactus/master/kube-config/calico/calico.yaml
+      ${KUBE_EXC} apply -f https://raw.githubusercontent.com/SerenaFeng/cactus/master/kube-config/calico/rbac-kdd.yaml
+      ${KUBE_EXC} apply -f https://raw.githubusercontent.com/SerenaFeng/cactus/master/kube-config/calico/calico.yaml
 DEPLOY_END
 
       wait_ready ${vnode}
@@ -66,4 +65,12 @@ DEPLOY_END
   done
 }
 
+function deploy_minion {
+  for vnode in "${vnodes[@]}"; do
+    [[ $(is_master ${vnode}) ]] || {
+      echo "Begin deploying minion ${vnode} ... at `date`"
 
+      echo "Finish deploying minion ${vnode} ... at `date`"
+    }
+  done
+}
