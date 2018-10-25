@@ -14,18 +14,14 @@ export STORAGE_DIR=/var/cactus
 DEPLOY_DIR=$(cd "${REPO_ROOT_PATH}/deploy"; pwd)
 BRIDGES=('cactus_admin' 'cactus_mgmt' 'cactus_public')
 BR_NAMES=('admin' 'mgmt' 'public')
-BASE_CONFIG_URI="file://${REPO_ROOT_PATH}/config"
 LOCAL_IDF=${REPO_ROOT_PATH}/config/lab/basic/idf.yaml
 SCENARIO=${REPO_ROOT_PATH}/config/scenario/virtual/k8s-calico-noha.yaml
 DRY_RUN=${DRY_RUN:-0}
-INFRA_CREATION_ONLY=${INFRA_CREATION_ONLY:-0}
-NO_DEPLOY_ENVIRONMENT=${NO_DEPLOY_ENVIRONMENT:-0}
-ERASE_ENV=${ERASE_ENV:-0}
 CPU_PASS_THROUGH=${CPU_PASS_THROUGH:-1}
 
 source "${DEPLOY_DIR}/globals.sh"
 source "${DEPLOY_DIR}/lib.sh"
-source "${DEPLOY_DIR}/lib_template.sh"
+source "${DEPLOY_DIR}/vms.sh"
 source "${DEPLOY_DIR}/k8s.sh"
 
 # BEGIN of main
@@ -107,4 +103,6 @@ deploy_master
 
 deploy_minion
 
-wait_all_ready
+deploy_cni
+
+wait_cluster_ready

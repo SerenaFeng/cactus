@@ -3,14 +3,6 @@
 KUBE_DIR=/home/cactus/.kube
 KUBE_EXC="kubectl --kubeconfig ${KUBE_DIR}/config"
 
-function get_master {
-  for vnode in "${vnodes[@]}"; do
-    if is_master ${vnode}; then
-      echo $(get_node_ip ${vnode})
-      break
-    fi
-  done
-}
 
 function get_kube_join {
   KUBE_JOIN=$(master_exc "sudo kubeadm token create --print-join-command")
@@ -18,22 +10,6 @@ function get_kube_join {
 
 function master_exc {
   ssh_exc $(get_master) "$@"
-}
-
-function wait_ready {
-  vnode=${1}
-  total_attempts=120
-  sleep_time=15
-
-  echo "Wait for ${vnode} to be ready ....."
-  for attempt in $(seq "${total_attempts}"); do
-    master_exc "${KUBE_EXC} get node ${vnode} | tail -1 | grep -v NotReady | grep Ready"
-    case $? in
-      0) echo "${attempt}> Success"; break ;;
-      *) echo "${attempt}/${total_attempts}> ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
-    esac
-    sleep ${sleep_time}
-  done
 }
 
 function deploy_master {
@@ -95,15 +71,25 @@ DEPLOY_END
   echo "All minions are deployed"
 }
 
-function wait_all_ready {
+function deploy_cni {
   echo "Apply CNI..."
   ssh ${SSH_OPTS} cactus@$(get_master) bash -s -e << DEPLOY_CNI_END
     ${KUBE_EXC} apply -f https://raw.githubusercontent.com/SerenaFeng/cactus/master/kube-config/calico/rbac-kdd.yaml
     ${KUBE_EXC} apply -f https://raw.githubusercontent.com/SerenaFeng/cactus/master/kube-config/calico/calico.yaml
 DEPLOY_CNI_END
+}
 
-  echo "Waiting for cluster to be Ready"
-  for vnode in "${vnodes[@]}"; do
-    wait_ready ${vnode}
+function wait_cluster_ready {
+  local total_attempts=120
+  local sleep_time=30
+
+  echo "Wait for cluster to be ready ....."
+  for attempt in $(seq "${total_attempts}"); do
+    master_exc "${KUBE_EXC} get nodes | grep -v NotReady | grep Ready"
+    case $? in
+      0) echo "${attempt}> Success"; break ;;
+      *) echo "${attempt}/${total_attempts}> cluster ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
+    esac
+    sleep ${sleep_time}
   done
 }
