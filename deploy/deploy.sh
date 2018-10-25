@@ -102,4 +102,4 @@ start_vms
 
 check_connection
 
-deploy_k8s
+deploy_k8sm

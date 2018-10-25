@@ -375,9 +375,9 @@ function restart_salt_service {
 
 }
 
-function deploy_k8s {
+function deploy_k8sm {
   KUBE_DIR=/home/cactus/.kube
-  KUBECONF="--kubeconfig ${KUBE_DIR}/config"
+  KUBEXC="kubectl --kubeconfig ${KUBE_DIR}/config"
   for vnode in "${vnodes[@]}"; do
     if is_master ${vnode};then
       ssh ${SSH_OPTS} cactus@$(get_node_ip ${vnode}) bash -s -e << DEPLOY_K8S_END
@@ -385,7 +385,10 @@ function deploy_k8s {
       set -e
       set -x
 
-      echo "Begin to deploy ${vnode}"
+      KUBE_DIR=/home/cactus/.kube
+      alias kubexc="kubectl --kubeconfig ${KUBE_DIR}/config"
+
+      echo "Begin to deploy ${vnode} at ...... `date`"
       echo -n "Make sure docker&kubelet is ready..."
       sudo groupadd docker
       sudo usermod -aG docker cactus
@@ -400,12 +403,28 @@ function deploy_k8s {
       mkdir -p ${KUBE_DIR}
       sudo cp -f /etc/kubernetes/admin.conf ${KUBE_DIR}/config
       sudo chown 1000:1000 ${KUBE_DIR}/config
-      kubectl ${KUBECONF} taint nodes --all node-role.kubernetes.io/master-
+      ${KUBEXC} taint nodes --all node-role.kubernetes.io/master-
 
       echo -n "Apply CNI..."
-      kubectl ${KUBECONF} apply -f https://raw.githubusercontent.com/SerenaFeng/cactus/master/kube-config/calico/rbac-kdd.yaml
-      kubectl ${KUBECONF} apply -f https://raw.githubusercontent.com/SerenaFeng/cactus/master/kube-config/calico/calico.yaml
+      ${KUBEXC} apply -f https://raw.githubusercontent.com/SerenaFeng/cactus/master/kube-config/calico/rbac-kdd.yaml
+      ${KUBEXC} apply -f https://raw.githubusercontent.com/SerenaFeng/cactus/master/kube-config/calico/calico.yaml
 DEPLOY_K8S_END
+
+      echo "Wait for Master to be ready....."
+      total_attempts=60
+      sleep_time=60
+      for attempt in $(seq "${total_attempts}"); do
+        ssh ${SSH_OPTS} cactus@$(get_node_ip ${vnode}) bash -s -e << WAIT_MASTER_READY
+        ${KUBEXC} get node ${vnode} | tail -1 | grep -v NotReady | grep Ready
+WAIT_MASTER_READY
+        case $? in
+          0) echo "${attempt}> Success"; break ;;
+          *) echo "${attempt}/${total_attempts}> master ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
+        esac
+        sleep ${sleep_time}
+      done
+      echo "Finish deploying ${vnode} at ...... `date`"
     fi
   done
 }
+
