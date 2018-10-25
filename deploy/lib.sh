@@ -174,7 +174,7 @@ function check_connection {
   for vnode in "${vnodes[@]}"; do
     if is_master ${vnode}; then
       for attempt in $(seq "${total_attempts}"); do
-        ssh_vnode ${vnode} uptime
+        ssh_exc $(get_node_ip ${vnode}) uptime
         case $? in
           0) echo "${attempt}> Success"; break ;;
           *) echo "${attempt}/${total_attempts}> ssh server ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
@@ -213,10 +213,10 @@ function get_node_ip {
   echo $(eval echo "${idf_cactus_jumphost_fixed_ips_admin%.*}.${node_id}")
 }
 
-function ssh_vnode {
-  local vnode=${1}; shift
-  local cmdstr=${1}; shift
-  ssh ${SSH_OPTS} cactus@$(get_node_ip ${vnode}) bash -s -e << SSH_EXE_END
+function ssh_exc {
+  local ip=${1}; shift
+  local cmdstr="$@"; shift
+  ssh ${SSH_OPTS} cactus@${ip} bash -s -e << SSH_EXE_END
     $cmdstr
 SSH_EXE_END
 }

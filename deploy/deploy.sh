@@ -106,3 +106,5 @@ check_connection
 deploy_master
 
 deploy_minion
+
+wait_all_ready
