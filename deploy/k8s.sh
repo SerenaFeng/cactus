@@ -2,7 +2,23 @@
 
 # Get required infra deployment data
 set +x
-#eval "$(parse_yaml "${SCENARIO}")"
+
+function parse_components {
+  compgen -v |
+  while read var; do {
+    [[ ${var} =~ cluster_states_components_ ]] && [[ -n ${!var} ]] && echo ${!var}
+  }
+  done || true
+}
+
+function parse_cni {
+  compgen -v |
+  while read var; do {
+    [[ ${var} =~ cluster_states_cni_ ]] && [[ -n ${!var} ]] && echo ${!var}
+  }
+  done || true
+}
+
 [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
 
 function master_exc {
@@ -73,11 +89,12 @@ DEPLOY_MINION
 }
 
 function deploy_cni {
-  echo "Apply CNI..."
-  ssh ${SSH_OPTS} cactus@$(get_master)  bash -s -e << DEPLOY_CNI
-    kubectl apply -f https://raw.githubusercontent.com/SerenaFeng/cactus/master/kube-config/calico/rbac-kdd.yaml
-    kubectl apply -f https://raw.githubusercontent.com/SerenaFeng/cactus/master/kube-config/calico/calico.yaml
-DEPLOY_CNI
+  echo "Apply CNI... x${cluster_states_cni}"
+
+  if [[ -z ${cluster_states_cni} ]] || [[ "x${cluster_states_cni}" == "x" ]]; then
+    cluster_states_cni=calico
+  fi
+  master_exc "kubectl apply -f /home/cactus/kube-config/${cluster_states_cni}"
 }
 
 function wait_cluster_ready {
@@ -96,3 +113,13 @@ function wait_cluster_ready {
   done
   set -e
 }
+
+function deploy_components {
+  [[ -n ${cluster_states_components[@]} ]] &&
+  [[ ${cluster_states_components} != '' ]] && {
+    for com in "${cluster_states_components[@]}"; do
+      master_exc "kubectl apply -f /home/cactus/kube-config/${com}"
+    done
+  }
+}
+

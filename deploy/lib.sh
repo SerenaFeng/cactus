@@ -37,6 +37,10 @@ function parse_pdf {
   IFS=':' read -a vnodes <<< "${nodes}"
 }
 
+function parse_scenario {
+  eval "$(parse_yaml "${CONF_DIR}/scenario/${SCENARIO}.yaml")"
+}
+
 function parse_yaml {
   local prefix=$2
   local s

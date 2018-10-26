@@ -52,6 +52,7 @@ function build_images {
   docker run -it \
            --name ${dib_name} \
            -v ${STORAGE_DIR}:/imagedata \
+           -v ${REPO_ROOT_PATH}/kube-config:/elements/master-static/static/home/cactus/kube-config \
            --privileged \
            --rm \
            ${builder_image} \

@@ -58,7 +58,7 @@ source "${DEPLOY_DIR}/k8s.sh"
 ##############################################################################
 # BEGIN of main
 #
-set +x
+set -x
 while getopts "p:s:h" OPTION
 do
     case $OPTION in
@@ -94,6 +94,8 @@ parse_idf
 
 parse_pdf
 
+parse_scenario
+
 prepare_networks
 
 prepare_vms
@@ -115,3 +117,5 @@ deploy_minion
 deploy_cni
 
 wait_cluster_ready
+
+deploy_components
