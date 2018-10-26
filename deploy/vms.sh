@@ -1,3 +1,41 @@
+BRIDGES=('cactus_admin' 'cactus_mgmt' 'cactus_public')
+BR_NAMES=('admin' 'mgmt' 'public')
+STORAGE_DIR=/var/cactus
+
+mkdir -p ${STORAGE_DIR}
+
+function prepare_networks {
+  # Map PDF networks 'admin' to bridge names
+  BR_NETS=( \
+    "${idf_cactus_jumphost_fixed_ips_admin}" \
+    "${idf_cactus_jumphost_fixed_ips_mgmt}" \
+    "${idf_cactus_jumphost_fixed_ips_public}" \
+  )
+
+  for ((i = 0; i < ${#BR_NETS[@]}; i++)); do
+    br_jump=$(eval echo "\$idf_cactus_jumphost_bridges_${BR_NAMES[i]}")
+    if [ -n "${br_jump}" ] && [ "${br_jump}" != 'None' ] && \
+       [ -d "/sys/class/net/${br_jump}/bridge" ]; then
+      notify_n "[OK] Bridge found for '${BR_NAMES[i]}': ${br_jump}\n" 2
+      BRIDGES[${i}]="${br_jump}"
+    elif [ -n "${BR_NETS[i]}" ]; then
+      bridge=$(ip addr | awk "/${BR_NETS[i]%.*}./ {print \$NF; exit}")
+      if [ -n "${bridge}" ] && [ -d "/sys/class/net/${bridge}/bridge" ]; then
+        notify_n "[OK] Bridge found for net ${BR_NETS[i]%.*}.0: ${bridge}\n" 2
+        BRIDGES[${i}]="${bridge}"
+      fi
+    fi
+  done
+  notify "[NOTE] Using bridges: ${BRIDGES[*]}\n" 2
+
+  # Expand network templates
+  for tp in "${DEPLOY_DIR}/"*.template; do
+    eval "cat <<-EOF
+      $(<"${tp}")
+EOF" 2> /dev/null > "${tp%.template}"
+  done
+}
+
 function build_images {
   local builder_image=cactus/dib:latest
   local dib_name=cactus_image_builder
@@ -56,9 +94,8 @@ function prepare_vms {
 }
 
 function create_networks {
-  local vnode_networks=("$@")
   # create required networks
-  for net in "${vnode_networks[@]}"; do
+  for net in "${BRIDGES[@]}"; do
     if virsh net-info "${net}" >/dev/null 2>&1; then
       virsh net-destroy "${net}" || true
       virsh net-undefine "${net}"
@@ -74,7 +111,6 @@ function create_networks {
 
 function create_vms {
   cpu_pass_through=$1; shift
-  local vnode_networks=("$@")
 
   # AArch64: prepare arch specific arguments
   local virt_extra_args=""
@@ -87,7 +123,7 @@ function create_vms {
   for vnode in "${vnodes[@]}"; do
     # prepare network args
     net_args=""
-    for net in "${vnode_networks[@]}"; do
+    for net in "${BRIDGES[@]}"; do
       net_args="${net_args} --network bridge=${net},model=virtio"
     done
 
@@ -142,7 +178,7 @@ function check_connection {
         ssh_exc $(get_node_ip ${vnode}) uptime
         case $? in
           0) echo "${attempt}> Success"; break ;;
-          *) echo "${attempt}/${total_attempts}> ssh server ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
+          *) echo "${attempt}/${total_attempts}> master ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
         esac
         sleep $sleep_time
       done

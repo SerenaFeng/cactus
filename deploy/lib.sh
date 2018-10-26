@@ -28,8 +28,12 @@ function generate_ssh_key {
   sudo install -D -o "${user}" -m 0600 "${cactus_ssh_key}.pub" "${SSH_KEY}.pub"
 }
 
-function parse_vnodes {
-  eval $(python ${REPO_ROOT_PATH}/deploy/parse_pdf.py -y ${REPO_ROOT_PATH}/config/lab/basic/lab.yaml 2>&1)
+function parse_idf {
+  eval "$(parse_yaml "${CONF_DIR}/lab/idf-${TARGET_POD}.yaml")"
+}
+
+function parse_pdf {
+  eval $(python ${DEPLOY_DIR}/parse_pdf.py -y ${CONF_DIR}/lab/pdf-${TARGET_POD}.yaml 2>&1)
   IFS=':' read -a vnodes <<< "${nodes}"
 }
 

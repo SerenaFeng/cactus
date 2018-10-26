@@ -1,0 +1,10 @@
+---
+cluster:
+  domain: cactus.k8s
+  states:
+    cni: calico
+    cri: docker
+    csi: ''
+    components:
+      - dashboard
+      - metrics-server

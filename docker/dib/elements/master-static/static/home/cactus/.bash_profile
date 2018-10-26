@@ -1,4 +1,4 @@
-# .bashrc
+# .bash_profile
 
 # Source global definitions
 if [ -f /etc/bashrc ]; then

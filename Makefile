@@ -10,6 +10,12 @@ MAKEFLAGS += --no-builtin-rules
 CONFDIR ?= ./kube-config
 OBJS := calico dashboard example flannel heapster hostpath metrics-server
 HELP := =y print this help information
+CI_DEBUG := False
+SCENARIO := calico-noha.yaml
+
+ifeq ($(DEBUG), y)
+    CI_DEBUG = True
+endif
 
 define INSTALL_HELP
 # Deploy k8s locally or on vms.
@@ -17,7 +23,7 @@ define INSTALL_HELP
 # Args:
 #   help: $(HELP)
 #   where: local or vms
-#   
+#   scenario: deploy states, such as calico-defaults-noha
 # Example:
 #   make install where=vms
 #   
@@ -31,7 +37,10 @@ install:
 	bash k8s/k8sm.sh
 else
 install:
-	sudo CI_DEBUG=True bash deploy/deploy.sh
+    ifdef scenario
+        SCENARIO=$(scenario)
+    endif
+	sudo CI_DEBUG=$(CI_DEBUG) bash deploy/deploy.sh -s $(SCENARIO)
 endif
 
 define APPLY_HELP
