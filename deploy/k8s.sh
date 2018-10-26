@@ -2,7 +2,7 @@
 
 # Get required infra deployment data
 set +x
-eval "$(parse_yaml "${SCENARIO}")"
+#eval "$(parse_yaml "${SCENARIO}")"
 [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
 
 function master_exc {

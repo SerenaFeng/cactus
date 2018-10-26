@@ -40,11 +40,14 @@ export TERM=xterm
 # BEGIN of variables to customize
 #
 CI_DEBUG=${CI_DEBUG:-0}; [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
-REPO_ROOT_PATH=/Users/serena/github/cactus #$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")
+REPO_ROOT_PATH=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")
 DEPLOY_DIR=$(cd "${REPO_ROOT_PATH}/deploy"; pwd)
 CONF_DIR=${REPO_ROOT_PATH}/config
+STORAGE_DIR=/var/cactus
 
 CPU_PASS_THROUGH=${CPU_PASS_THROUGH:-1}
+
+mkdir -p ${STORAGE_DIR}
 
 source "${DEPLOY_DIR}/globals.sh"
 source "${DEPLOY_DIR}/lib.sh"
@@ -56,7 +59,6 @@ source "${DEPLOY_DIR}/k8s.sh"
 # BEGIN of main
 #
 set +x
-OPNFV_BRIDGE_IDX=0
 while getopts "p:s:h" OPTION
 do
     case $OPTION in
@@ -66,6 +68,7 @@ do
         *) notify_e "[ERROR] Arguments not according to new argument style\n" ;;
     esac
 done
+set -x
 
 if [[ "$(sudo whoami)" != 'root' ]]; then
   notify_e "[ERROR] This script requires sudo rights!"
@@ -85,11 +88,13 @@ fi
 # Infra setup
 generate_ssh_key
 
-prepare_networks
-
 build_images
 
-parse_vnodes
+parse_idf
+
+parse_pdf
+
+prepare_networks
 
 prepare_vms
 

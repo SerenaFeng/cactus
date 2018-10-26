@@ -71,7 +71,7 @@ for image_item in k8s/master.qcow2 k8s/minion.qcow2; do
     image_format=${image_item##*.}
     [[ ${image_item} =~ "/" ]] && dir_name=${image_item%/*} || dir_name=""
 
-    [[ ${image_item} =~ "k8sm" ]] && {
+    [[ ${image_item} =~ "master" ]] && {
         [[ -n ${dir_name} ]] && {
             mkdir -p ${dir_name}
             pushd ${dir_name}
