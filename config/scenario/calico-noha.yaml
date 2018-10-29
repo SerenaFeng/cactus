@@ -1,6 +1,7 @@
 ---
 cluster:
   domain: cactus.k8s
+  version: v1.12.1
   states:
     cni: calico
     cri: docker

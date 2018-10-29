@@ -2,9 +2,26 @@
 
 # Get required infra deployment data
 set +x
-#eval "$(parse_yaml "${SCENARIO}")"
-[[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
+eval "$(parse_yaml "${CONF_DIR}/scenario/${SCENARIO}.yaml")"
 
+
+function parse_components {
+  compgen -v |
+  while read var; do {
+    [[ ${var} =~ cluster_states_components_ ]] && [[ -n ${!var} ]] && echo ${!var}
+  }
+  done || true
+}
+
+function parse_cni {
+  compgen -v |
+  while read var; do {
+    [[ ${var} =~ cluster_states_cni_ ]] && [[ -n ${!var} ]] && echo ${!var}
+  }
+  done || true
+}
+
+[[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
 function master_exc {
   ssh_exc $(get_master) "$@"
 }
@@ -17,8 +34,15 @@ function deploy_master {
   local KUBE_DIR=/home/cactus/.kube
   for vnode in "${vnodes[@]}"; do
     if is_master ${vnode}; then
+      args="--node-name ${vnode} --apiserver-advertise-address $(get_mgmt_ip ${vnode})"
+
+      [[ -n ${cluster_domain} ]] && args="${args} --service-dns-domain ${cluster_domain}"
+      [[ -n ${cluster_pod_cidr} ]] && args="${args} --pod-network-cidr ${cluster_pod_cidr}"
+      [[ -n ${cluster_service_cidr} ]] && args="${args} --service-cidr ${cluster_service_cidr}"
+      [[ -n ${cluster_version} ]] && args="${args} --kubernetes-version ${cluster_version}"
+
       echo "Begin deploying master ${vnode} ... "
-      ssh ${SSH_OPTS} cactus@$(get_node_ip ${vnode}) bash -s -e << DEPLOY_MASTER
+      ssh ${SSH_OPTS} cactus@$(get_admin_ip ${vnode}) bash -s -e << DEPLOY_MASTER
         sudo -i
         set -ex
 
@@ -30,7 +54,7 @@ function deploy_master {
         systemctl restart docker
 
         echo -n "Deploy k8s with kubeadm, this will take a few minutes, please wait ..."
-        kubeadm init --node-name ${vnode} --pod-network-cidr 10.244.0.1/16 --kubernetes-version v1.12.1
+        kubeadm init ${args}
 
         echo -n "Configure kubectl"
         exit
@@ -52,7 +76,7 @@ function deploy_minion {
     if ! is_master ${vnode}; then
       echo "Begin deploying minion ${vnode} ..."
 
-      ssh ${SSH_OPTS} cactus@$(get_node_ip ${vnode}) bash -s -e << DEPLOY_MINION
+      ssh ${SSH_OPTS} cactus@$(get_admin_ip ${vnode}) bash -s -e << DEPLOY_MINION
         sudo -i
         set -ex
 
@@ -74,10 +98,9 @@ DEPLOY_MINION
 
 function deploy_cni {
   echo "Apply CNI..."
-  ssh ${SSH_OPTS} cactus@$(get_master)  bash -s -e << DEPLOY_CNI
-    kubectl apply -f https://raw.githubusercontent.com/SerenaFeng/cactus/master/kube-config/calico/rbac-kdd.yaml
-    kubectl apply -f https://raw.githubusercontent.com/SerenaFeng/cactus/master/kube-config/calico/calico.yaml
-DEPLOY_CNI
+  cni=$(parse_cni)
+  [[ -z ${cni} ]] && cni=calico
+  master_exc "kubectl apply -f /home/cactus/kube-config/${cni}"
 }
 
 function wait_cluster_ready {
@@ -95,4 +118,11 @@ function wait_cluster_ready {
     sleep ${sleep_time}
   done
   set -e
+}
+
+function deploy_components {
+  coms=$(parse_components)
+  for com in "${coms[@]}"; do
+    master_exc "kubectl apply -f /home/cactus/kube-config/${com}"
+  done
 }

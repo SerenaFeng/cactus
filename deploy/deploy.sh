@@ -104,6 +104,8 @@ create_vms "${CPU_PASS_THROUGH}"
 
 update_admin_network
 
+update_mgmt_network
+
 start_vms
 
 check_connection

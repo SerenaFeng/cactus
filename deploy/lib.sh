@@ -58,10 +58,16 @@ function parse_yaml {
   }' | sed 's/_=/+=/g'
 }
 
-function get_node_ip {
+function get_admin_ip {
   local vnode=${1}
   local node_id=$(eval echo "\$nodes_${vnode}_node_id")
   echo $(eval echo "${idf_cactus_jumphost_fixed_ips_admin%.*}.${node_id}")
+}
+
+function get_mgmt_ip {
+  local vnode=${1}
+  local node_id=$(eval echo "\$nodes_${vnode}_node_id")
+  echo $(eval echo "${idf_cactus_jumphost_fixed_ips_mgmt%.*}.${node_id}")
 }
 
 function ssh_exc {
@@ -84,7 +90,7 @@ function is_master {
 function get_master {
   for vnode in "${vnodes[@]}"; do
     if is_master ${vnode}; then
-      echo $(get_node_ip ${vnode})
+      echo $(get_admin_ip ${vnode})
       break
     fi
   done

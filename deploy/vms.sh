@@ -1,32 +1,26 @@
-BRIDGES=('cactus_admin' 'cactus_mgmt' 'cactus_public')
-BR_NAMES=('admin' 'mgmt' 'public')
-STORAGE_DIR=/var/cactus
+#!/usr/bin/env bash
 
-mkdir -p ${STORAGE_DIR}
+function __get_bridges {
+  identity_=idf_cactus_jumphost_bridges_
+  compgen -v |
+  while read var; do {
+    [[ ${var} =~ ${identity_} ]] && echo ${var#${identity_}}
+  }
+  done || true
+}
 
 function prepare_networks {
-  # Map PDF networks 'admin' to bridge names
-  BR_NETS=( \
-    "${idf_cactus_jumphost_fixed_ips_admin}" \
-    "${idf_cactus_jumphost_fixed_ips_mgmt}" \
-    "${idf_cactus_jumphost_fixed_ips_public}" \
-  )
+  BRIDGES=$(__get_bridges)
 
-  for ((i = 0; i < ${#BR_NETS[@]}; i++)); do
-    br_jump=$(eval echo "\$idf_cactus_jumphost_bridges_${BR_NAMES[i]}")
-    if [ -n "${br_jump}" ] && [ "${br_jump}" != 'None' ] && \
-       [ -d "/sys/class/net/${br_jump}/bridge" ]; then
-      notify_n "[OK] Bridge found for '${BR_NAMES[i]}': ${br_jump}\n" 2
-      BRIDGES[${i}]="${br_jump}"
-    elif [ -n "${BR_NETS[i]}" ]; then
-      bridge=$(ip addr | awk "/${BR_NETS[i]%.*}./ {print \$NF; exit}")
-      if [ -n "${bridge}" ] && [ -d "/sys/class/net/${bridge}/bridge" ]; then
-        notify_n "[OK] Bridge found for net ${BR_NETS[i]%.*}.0: ${bridge}\n" 2
-        BRIDGES[${i}]="${bridge}"
-      fi
-    fi
-  done
-  notify "[NOTE] Using bridges: ${BRIDGES[*]}\n" 2
+  [[ ! "#{BRIDGES[@]}" =~ "admin" ]] && {
+    notify_n "[ERR] Bridge admin must be defined\n" 2
+    exit 1
+  }
+
+  [[ ! "#{BRIDGES[@]}" =~ "mgmt" ]] && {
+    notify_n "[ERR] Bridge mgmt must be defined\n" 2
+    exit 1
+  }
 
   # Expand network templates
   for tp in "${DEPLOY_DIR}/"*.template; do
@@ -52,6 +46,7 @@ function build_images {
   docker run -it \
            --name ${dib_name} \
            -v ${STORAGE_DIR}:/imagedata \
+           -v ${REPO_ROOT_PATH}/kube-config:/elements/master-static/static/home/cactus/kube-config \
            --privileged \
            --rm \
            ${builder_image} \
@@ -148,12 +143,22 @@ function update_admin_network {
   for vnode in "${vnodes[@]}"; do
     local admin_br="${idf_cactus_jumphost_bridges_admin}"
     local guest="cactus_${vnode}"
-    local ip=$(get_node_ip ${vnode})
-    local cmac=$(virsh domiflist ${guest} 2>&1| awk -v br=${admin_br} '/br/ {print $5; exit}')
+    local admin_ip=$(get_admin_ip ${vnode})
+    local admin_mac=$(virsh domiflist ${guest} 2>&1| awk -v br=${admin_br} '/br/ {print $5; exit}')
     virsh net-update "${admin_br}" add ip-dhcp-host \
-      "<host mac='${cmac}' name='${guest}' ip='${ip}'/>" --live --config
+      "<host mac='${admin_mac}' name='${guest}' ip='${admin_ip}'/>" --live --config
   done
 }
+
+function update_mgmt_network {
+  for vnode in "${vnodes[@]}"; do
+    local mgmt_br="${idf_cactus_jumphost_bridges_mgmt}"
+    local guest="cactus_${vnode}"
+    local mgmt_ip=$(get_mgmt_ip ${vnode})
+    local mgmt_mac=$(virsh domiflist ${guest} 2>&1| awk -v br=${mgmt_br} '/br/ {print $5; exit}')
+    virsh net-update "${mgmt_br}" add ip-dhcp-host \
+      "<host mac='${mgmt_mac}' name='${guest}' ip='${mgmt_ip}'/>" --live --config
+  done}
 
 function start_vms {
   # start vms
@@ -175,7 +180,7 @@ function check_connection {
   for vnode in "${vnodes[@]}"; do
     if is_master ${vnode}; then
       for attempt in $(seq "${total_attempts}"); do
-        ssh_exc $(get_node_ip ${vnode}) uptime
+        ssh_exc $(get_admin_ip ${vnode}) uptime
         case $? in
           0) echo "${attempt}> Success"; break ;;
           *) echo "${attempt}/${total_attempts}> master ain't ready yet, waiting for ${sleep_time} seconds ..." ;;

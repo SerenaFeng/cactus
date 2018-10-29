@@ -9,8 +9,10 @@
 <network>
   <name>cactus_mgmt</name>
   <bridge name="${idf_cactus_jumphost_bridges_mgmt}"/>
-  <ip address="${idf_cactus_jumphost_fixed_ips_mgmt%.*}.1" netmask="255.255.255.0"/>
+  <forward mode="nat"/>
+  <ip address="${idf_cactus_jumphost_fixed_ips_mgmt%.*}.1" netmask="255.255.255.0">
     <dhcp>
       <range start="${idf_cactus_jumphost_fixed_ips_mgmt%.*}.2" end="${idf_cactus_jumphost_fixed_ips_mgmt%.*}.254"/>
     </dhcp>
+  </ip>
 </network>
