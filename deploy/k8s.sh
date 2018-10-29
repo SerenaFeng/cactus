@@ -1,27 +1,28 @@
 #!/usr/bin/env bash
 
-# Get required infra deployment data
-set +x
-eval "$(parse_yaml "${CONF_DIR}/scenario/${SCENARIO}.yaml")"
-
+[[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
 
 function parse_components {
+  set +x
   compgen -v |
   while read var; do {
     [[ ${var} =~ cluster_states_components_ ]] && [[ -n ${!var} ]] && echo ${!var}
   }
   done || true
+  [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
 }
 
 function parse_cni {
+  set +x
   compgen -v |
   while read var; do {
     [[ ${var} =~ cluster_states_cni_ ]] && [[ -n ${!var} ]] && echo ${!var}
   }
   done || true
+  [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
 }
 
-[[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
+
 function master_exc {
   ssh_exc $(get_master) "$@"
 }
@@ -97,10 +98,12 @@ DEPLOY_MINION
 }
 
 function deploy_cni {
-  echo "Apply CNI..."
-  cni=$(parse_cni)
-  [[ -z ${cni} ]] && cni=calico
-  master_exc "kubectl apply -f /home/cactus/kube-config/${cni}"
+  echo "Apply CNI ..."
+
+  if [[ -z ${cluster_states_cni} ]] || [[ "${cluster_states_cni}" == 'None' ]]; then
+    cluster_states_cni=calico
+  fi
+  master_exc "kubectl apply -f /home/cactus/kube-config/${cluster_states_cni}"
 }
 
 function wait_cluster_ready {
@@ -121,8 +124,9 @@ function wait_cluster_ready {
 }
 
 function deploy_components {
-  coms=$(parse_components)
-  for com in "${coms[@]}"; do
-    master_exc "kubectl apply -f /home/cactus/kube-config/${com}"
-  done
+  [[ -n "${cluster_states_components[@]}" ]] && {
+    for com in "${cluster_states_components[@]}"; do
+      master_exc "kubectl apply -f /home/cactus/kube-config/${com}"
+    done
+  }
 }

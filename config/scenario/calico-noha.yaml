@@ -5,7 +5,7 @@ cluster:
   states:
     cni: calico
     cri: docker
-    csi: ''
+    csi:
     components:
       - dashboard
       - metrics-server
