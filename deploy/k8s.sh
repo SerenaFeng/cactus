@@ -22,6 +22,19 @@ function parse_cni {
   [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
 }
 
+function parse_labels {
+  set +x
+  local vnode=${1};shift
+  local identity_="nodes_${vnode}_labels_"
+  compgen -v |
+  while read var; do {
+    [[ ${var} =~ ${identity_} ]] && {
+      echo ${var#${identity_}}=${!var}
+    }
+  }
+  done || true
+  [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
+}
 
 function master_exc {
   ssh_exc $(get_master) "$@"
@@ -64,7 +77,7 @@ function deploy_master {
         sudo cp -f /etc/kubernetes/admin.conf ${KUBE_DIR}/config
         sudo chown 1000:1000 ${KUBE_DIR}/config
         kubectl taint nodes --all node-role.kubernetes.io/master-
-        kubectl label nodes ${vnode} role=master
+        kubectl label node ${vnode} role=master
 DEPLOY_MASTER
    fi
   done
@@ -122,6 +135,11 @@ function wait_cluster_ready {
     sleep ${sleep_time}
   done
   set -e
+
+  for vnode in "${vnodes[@]}"; do
+    read -r -a labels <<< $(parse_labels ${vnode})
+    master_exc "kubectl label node ${vnode} ${labels[@]}"
+  done
 }
 
 function deploy_components {

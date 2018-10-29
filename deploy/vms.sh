@@ -1,23 +1,25 @@
 #!/usr/bin/env bash
 
+BRIDGE_IDENTITY="idf_cactus_jumphost_bridges_"
+
 function __get_bridges {
-  identity_=idf_cactus_jumphost_bridges_
   compgen -v |
   while read var; do {
-    [[ ${var} =~ ${identity_} ]] && echo ${var#${identity_}}
+    [[ ${var} =~ ${BRIDGE_IDENTITY} ]] && echo ${var#${BRIDGE_IDENTITY}}
   }
   done || true
 }
 
 function prepare_networks {
-  BRIDGES=$(__get_bridges)
+  local brs=$(__get_bridges)
+  read -r -a BR_NAMES <<< $(__get_bridges)
 
-  [[ ! "#{BRIDGES[@]}" =~ "admin" ]] && {
+  [[ ! "${BR_NAMES[@]}" =~ "admin" ]] && {
     notify_n "[ERR] Bridge admin must be defined\n" 2
     exit 1
   }
 
-  [[ ! "#{BRIDGES[@]}" =~ "mgmt" ]] && {
+  [[ ! "${BR_NAMES[@]}" =~ "mgmt" ]] && {
     notify_n "[ERR] Bridge mgmt must be defined\n" 2
     exit 1
   }
@@ -90,7 +92,8 @@ function prepare_vms {
 
 function create_networks {
   # create required networks
-  for net in "${BRIDGES[@]}"; do
+  for br in "${BR_NAMES[@]}"; do
+    net=$(eval echo "\$${BRIDGE_IDENTITY}${br}")
     if virsh net-info "${net}" >/dev/null 2>&1; then
       virsh net-destroy "${net}" || true
       virsh net-undefine "${net}"
@@ -118,7 +121,8 @@ function create_vms {
   for vnode in "${vnodes[@]}"; do
     # prepare network args
     net_args=""
-    for net in "${BRIDGES[@]}"; do
+    for br in "${BR_NAMES[@]}"; do
+      net=$(eval echo "\$${BRIDGE_IDENTITY}${br}")
       net_args="${net_args} --network bridge=${net},model=virtio"
     done
 
