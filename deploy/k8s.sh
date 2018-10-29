@@ -48,8 +48,8 @@ function deploy_master {
   local KUBE_DIR=/home/cactus/.kube
   for vnode in "${vnodes[@]}"; do
     if is_master ${vnode}; then
-      args="--node-name $(eval echo "\$nodes_${vnode}_hostname")" \
-           " --apiserver-advertise-address $(get_mgmt_ip ${vnode})"
+      args="--node-name $(eval echo "\$nodes_${vnode}_hostname")" 
+      args="${args} --apiserver-advertise-address $(get_mgmt_ip ${vnode})"
 
       [[ -n ${cluster_domain} ]] && args="${args} --service-dns-domain ${cluster_domain}"
       [[ -n ${cluster_pod_cidr} ]] && args="${args} --pod-network-cidr ${cluster_pod_cidr}"
