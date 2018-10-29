@@ -64,6 +64,7 @@ function deploy_master {
         sudo cp -f /etc/kubernetes/admin.conf ${KUBE_DIR}/config
         sudo chown 1000:1000 ${KUBE_DIR}/config
         kubectl taint nodes --all node-role.kubernetes.io/master-
+        kubectl label nodes ${vnode} role=master
 DEPLOY_MASTER
    fi
   done
