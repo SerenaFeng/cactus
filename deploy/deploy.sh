@@ -104,9 +104,9 @@ create_networks
 
 create_vms "${CPU_PASS_THROUGH}"
 
-update_admin_network
+update_network admin
 
-update_mgmt_network
+update_network mgmt
 
 start_vms
 

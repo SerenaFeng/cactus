@@ -143,26 +143,17 @@ function create_vms {
   done
 }
 
-function update_admin_network {
+function update_network {
+  net=${1}
   for vnode in "${vnodes[@]}"; do
-    local admin_br="${idf_cactus_jumphost_bridges_admin}"
+    local br=$(eval echo "\$idf_cactus_jumphost_bridges_${net}")
     local guest="cactus_${vnode}"
-    local admin_ip=$(get_admin_ip ${vnode})
-    local admin_mac=$(virsh domiflist ${guest} 2>&1| awk -v br=${admin_br} '/br/ {print $5; exit}')
-    virsh net-update "${admin_br}" add ip-dhcp-host \
-      "<host mac='${admin_mac}' name='${guest}' ip='${admin_ip}'/>" --live --config
+    local ip=$(eval "get_${net}_ip ${vnode}")
+    local mac=$(virsh domiflist ${guest} 2>&1 | grep ${br} | awk '{print $5; exit}')
+    virsh net-update "${br}" add ip-dhcp-host \
+      "<host mac='${mac}' name='${guest}' ip='${ip}'/>" --live --config
   done
 }
-
-function update_mgmt_network {
-  for vnode in "${vnodes[@]}"; do
-    local mgmt_br="${idf_cactus_jumphost_bridges_mgmt}"
-    local guest="cactus_${vnode}"
-    local mgmt_ip=$(get_mgmt_ip ${vnode})
-    local mgmt_mac=$(virsh domiflist ${guest} 2>&1| awk -v br=${mgmt_br} '/br/ {print $5; exit}')
-    virsh net-update "${mgmt_br}" add ip-dhcp-host \
-      "<host mac='${mgmt_mac}' name='${guest}' ip='${mgmt_ip}'/>" --live --config
-  done}
 
 function start_vms {
   # start vms

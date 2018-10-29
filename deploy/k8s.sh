@@ -138,7 +138,7 @@ function wait_cluster_ready {
 
   for vnode in "${vnodes[@]}"; do
     read -r -a labels <<< $(parse_labels ${vnode})
-    master_exc "kubectl label node ${vnode} ${labels[@]}"
+    [[ -n "${labels[@]}" ]] && master_exc "kubectl label node ${vnode} ${labels[@]}"
   done
 }
 
