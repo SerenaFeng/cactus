@@ -48,7 +48,8 @@ function deploy_master {
   local KUBE_DIR=/home/cactus/.kube
   for vnode in "${vnodes[@]}"; do
     if is_master ${vnode}; then
-      args="--node-name ${vnode} --apiserver-advertise-address $(get_mgmt_ip ${vnode})"
+      args="--node-name $(eval echo "\$nodes_${vnode}_hostname")" \
+           " --apiserver-advertise-address $(get_mgmt_ip ${vnode})"
 
       [[ -n ${cluster_domain} ]] && args="${args} --service-dns-domain ${cluster_domain}"
       [[ -n ${cluster_pod_cidr} ]] && args="${args} --pod-network-cidr ${cluster_pod_cidr}"
@@ -90,7 +91,7 @@ function deploy_minion {
   for vnode in "${vnodes[@]}"; do
     if ! is_master ${vnode}; then
       echo "Begin deploying minion ${vnode} ..."
-
+      args="--node-name $(eval echo "\$nodes_${vnode}_hostname")"
       ssh ${SSH_OPTS} cactus@$(get_admin_ip ${vnode}) bash -s -e << DEPLOY_MINION
         sudo -i
         set -ex
@@ -103,7 +104,7 @@ function deploy_minion {
         systemctl restart docker
 
         echo -n "Begin to join cluster"
-        ${KUBE_JOIN} --node-name ${vnode}
+        ${KUBE_JOIN} ${args}
 DEPLOY_MINION
       fi
       echo "Finish deploying minion ${vnode} ... "
