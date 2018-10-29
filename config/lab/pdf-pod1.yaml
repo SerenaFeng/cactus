@@ -1,4 +1,4 @@
-### lab descriptor file ###
+### pod descriptor file ###
 
 version: 1.0
 details:
@@ -13,9 +13,10 @@ details:
 # Note: no symbol of "-" in name, or parser_yaml will not be correct
 nodes:
   # Note1: name must be unique in pdf, TODO check automatically
-  # Note2: symbol of "-" in name will be replaced with "_" automatically,
-  # or parse_yaml will not be correct since name is the key(not value)
-  # of minions in cookiecutter.json/yaml
+  # Note2: node_id must be started from 2, since it will be used as the
+  #        last figure of admin&mgmt ip.
+  # Note3: symbol of "-" in name will be replaced with "_" automatically,
+  #        or parse_yaml will not be correct since name is the key(not value)
   - name: master01
     enabled: True
     node_id: 2
@@ -24,18 +25,9 @@ nodes:
       enabled: true
       master: true
     node: &nodeparams
-      type: vm
-      arch: x86_64
-      cpus: 2
-      cores: 8
+      cpus: 4
       memory: 20480
       disk: 40G
-    disks: &disks
-      - name: 'disk1'
-        disk_capacity: 80G
-        disk_type: hdd
-    interfaces:
-      - mac_address: "FF:EE:DD:CC:BB:A1"
   - name: minion01
     enabled: True
     node_id: 3
@@ -44,8 +36,15 @@ nodes:
       enabled: true
       master: false
     labels:
-      mostuse: true
+      purpose: mostuse
     node: *nodeparams
-    disks: *disks
-    interfaces:
-      - mac_address: "FF:EE:DD:CC:BB:A2"
+  - name: minion02
+    enabled: True
+    node_id: 4
+    hostname: minion02
+    cloud_native:
+      enabled: true
+      master: false
+    labels:
+      purpose: special
+    node: *nodeparams
