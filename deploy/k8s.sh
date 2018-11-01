@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-[[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
-
 function parse_components {
   set +x
   compgen -v |

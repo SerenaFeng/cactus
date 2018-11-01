@@ -3,11 +3,13 @@
 BRIDGE_IDENTITY="idf_cactus_jumphost_bridges_"
 
 function __get_bridges {
+  set +x
   compgen -v |
   while read var; do {
     [[ ${var} =~ ${BRIDGE_IDENTITY} ]] && echo ${var#${BRIDGE_IDENTITY}}
   }
   done || true
+  [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
 }
 
 function prepare_networks {
@@ -83,8 +85,8 @@ function prepare_vms {
         echo "preparing for minion vnode [${vnode}]"
         image="k8s/minion.qcow2"
       fi
-      cp "${image_dir}/${image}" "${image_dir}/${PREFIX}_${vnode}).qcow2"
-      disk_capacity="nodes_${node}_node_disk"
+      cp "${image_dir}/${image}" "${image_dir}/${PREFIX}_${vnode}.qcow2"
+      disk_capacity="nodes_${vnode}_node_disk"
       qemu-img resize "${image_dir}/${PREFIX}_${vnode}.qcow2" ${!disk_capacity}
     fi
   done

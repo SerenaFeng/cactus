@@ -60,7 +60,6 @@ source "${DEPLOY_DIR}/k8s.sh"
 ##############################################################################
 # BEGIN of main
 #
-set -x
 while getopts "p:s:P:h" OPTION
 do
     case $OPTION in
@@ -71,7 +70,6 @@ do
         *) notify_e "[ERROR] Arguments not according to new argument style\n" ;;
     esac
 done
-set -x
 
 if [[ "$(sudo whoami)" != 'root' ]]; then
   notify_e "[ERROR] This script requires sudo rights!"
