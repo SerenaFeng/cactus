@@ -99,3 +99,7 @@ function get_master {
     fi
   done
 }
+
+function get_nodename {
+  echo "${PREFIX}_${1}"
+}

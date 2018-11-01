@@ -15,12 +15,14 @@ $(notify_i "USAGE:" 2)
 $(notify_i "OPTIONS:" 2)
   -s  scenario short-name
   -p  Pod-name
+  -P  VM prefix, \${prefix}_<nodename>
   -h  help information
 
 $(notify_i "Input parameters to the build script are:" 2)
 -s Deployment-scenario, this points to a short deployment scenario name, which
    has to be defined in config directory (e.g. calico-noha).
 -p POD name as defined in the configuration directory, e.g. pod2
+-P Prefix of vm name, e.g. if prefix=cactus, vm name will be cactus_<node name>
 -h Print this help information
 
 $(notify_i "[NOTE] sudo & virsh priviledges are needed for this script to run" 3)
@@ -44,7 +46,7 @@ REPO_ROOT_PATH=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")
 DEPLOY_DIR=$(cd "${REPO_ROOT_PATH}/deploy"; pwd)
 CONF_DIR=${REPO_ROOT_PATH}/config
 STORAGE_DIR=/var/cactus
-
+PREFIX=cactus
 CPU_PASS_THROUGH=${CPU_PASS_THROUGH:-1}
 
 mkdir -p ${STORAGE_DIR}
@@ -59,11 +61,12 @@ source "${DEPLOY_DIR}/k8s.sh"
 # BEGIN of main
 #
 set -x
-while getopts "p:s:h" OPTION
+while getopts "p:s:P:h" OPTION
 do
     case $OPTION in
         p) TARGET_POD=${OPTARG} ;;
         s) SCENARIO=${OPTARG} ;;
+        P) PREFIX=${OPTARG} ;;
         h) usage; exit 0 ;;
         *) notify_e "[ERROR] Arguments not according to new argument style\n" ;;
     esac

@@ -57,10 +57,10 @@ function build_images {
 
 function cleanup_vms {
   # clean up existing nodes
-  for node in $(virsh list --name | grep -P 'cactus'); do
+  for node in $(virsh list --name | grep -P "${PREFIX}"); do
     virsh destroy "${node}"
   done
-  for node in $(virsh list --name --all | grep -P 'cactus'); do
+  for node in $(virsh list --name --all | grep -P "${PREFIX}"); do
     virsh domblklist "${node}" | awk '/^.da/ {print $2}' | \
       xargs --no-run-if-empty -I{} sudo rm -f {}
     # TODO command 'undefine' doesn't support option --nvram
@@ -74,18 +74,18 @@ function prepare_vms {
   cleanup_vms
 
   # Create vnode images and resize OS disk image for each foundation node VM
-  for node in "${vnodes[@]}"; do
-    if [ $(eval echo "\$nodes_${node}_enabled") == "True" ]; then
-      if is_master ${node}; then
-        echo "preparing for master vnode [${node}]"
+  for vnode in "${vnodes[@]}"; do
+    if [ $(eval echo "\$nodes_${vnode}_enabled") == "True" ]; then
+      if is_master ${vnode}; then
+        echo "preparing for master vnode [${vnode}]"
         image="k8s/master.qcow2"
       else
-        echo "preparing for minion vnode [${node}]"
+        echo "preparing for minion vnode [${vnode}]"
         image="k8s/minion.qcow2"
       fi
-      cp "${image_dir}/${image}" "${image_dir}/cactus_${node}.qcow2"
+      cp "${image_dir}/${image}" "${image_dir}/${PREFIX}_${vnode}).qcow2"
       disk_capacity="nodes_${node}_node_disk"
-      qemu-img resize "${image_dir}/cactus_${node}.qcow2" ${!disk_capacity}
+      qemu-img resize "${image_dir}/${PREFIX}_${vnode}.qcow2" ${!disk_capacity}
     fi
   done
 }
@@ -131,11 +131,11 @@ function create_vms {
     cpu_para=""
 
     # shellcheck disable=SC2086
-    virt-install --name "cactus_${vnode}" \
+    virt-install --name "${PREFIX}_${vnode}" \
     --memory $(eval echo "\$nodes_${vnode}_node_memory") \
     --vcpus $(eval echo "\$nodes_${vnode}_node_cpus")\
     ${cpu_para} --accelerate ${net_args} \
-    --disk path="${STORAGE_DIR}/cactus_${vnode}.qcow2",format=qcow2,bus=virtio,cache=none,io=native \
+    --disk path="${STORAGE_DIR}/${PREFIX}_${vnode}.qcow2",format=qcow2,bus=virtio,cache=none,io=native \
     --os-type linux --os-variant none \
     --boot hd --vnc --console pty --autostart --noreboot \
     --noautoconsole \
@@ -147,7 +147,7 @@ function update_network {
   net=${1}
   for vnode in "${vnodes[@]}"; do
     local br=$(eval echo "\$idf_cactus_jumphost_bridges_${net}")
-    local guest="cactus_${vnode}"
+    local guest="${PREFIX}_${vnode}"
     local ip=$(eval "get_${net}_ip ${vnode}")
     local mac=$(virsh domiflist ${guest} 2>&1 | grep ${br} | awk '{print $5; exit}')
     virsh net-update "${br}" add ip-dhcp-host \
@@ -158,7 +158,7 @@ function update_network {
 function start_vms {
   # start vms
   for node in "${vnodes[@]}"; do
-    virsh start "cactus_${node}"
+    virsh start "${PREFIX}_${node}"
     sleep $((RANDOM%5+1))
   done
 }

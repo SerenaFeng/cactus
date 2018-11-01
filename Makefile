@@ -14,6 +14,7 @@ DEBUG ?= false
 scenario ?= calico-noha
 where ?= vms
 pod ?= pod1
+prefix ?= cactus
 
 define INSTALL_HELP
 # Deploy k8s locally or on vms.
@@ -35,7 +36,7 @@ install:
 	bash k8s/k8sm.sh
 else
 install:
-	sudo CI_DEBUG=$(DEBUG) bash deploy/deploy.sh -s $(scenario) -p $(pod)
+	sudo CI_DEBUG=$(DEBUG) bash deploy/deploy.sh -s $(scenario) -p $(pod) -P $(prefix)
 endif
 
 define APPLY_HELP
