@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+REMOTE_KUBEDIR=/home/cactus/.kube
+LOCAL_KUBEDIR="${REPO_ROOT_PATH}/kube-config"
+
+
 function parse_components {
   set +x
   compgen -v |
@@ -42,8 +46,24 @@ function get_kube_join {
   KUBE_JOIN=$(master_exc "sudo kubeadm token create --print-join-command")
 }
 
+function kube_exc {
+  local cmdstr=${1}
+  if [ ${ONSITE} -eq 0 ]; then
+    eval "${cmdstr}"
+  else
+    master_exc "${cmdstr}"
+  fi
+}
+
+function kube_apply {
+  if [ ${ONSITE} -eq 0 ]; then
+    kubectl apply -f ${LOCAL_KUBEDIR}/${1}
+  else
+    master_exc "kubectl apply -f ${REMOTE_KUBEDIR}/${1}"
+  fi
+}
+
 function deploy_master {
-  local KUBE_DIR=/home/cactus/.kube
   for vnode in "${vnodes[@]}"; do
     if is_master ${vnode}; then
       args="--node-name $(eval echo "\$nodes_${vnode}_hostname")" 
@@ -69,16 +89,24 @@ function deploy_master {
         echo -n "Deploy k8s with kubeadm, this will take a few minutes, please wait ..."
         kubeadm init ${args}
 
+
         echo -n "Configure kubectl"
         exit
         set -ex
-        mkdir -p ${KUBE_DIR}
-        sudo cp -f /etc/kubernetes/admin.conf ${KUBE_DIR}/config
-        sudo chown 1000:1000 ${KUBE_DIR}/config
+        mkdir -p ${REMOTE_KUBEDIR}
+        sudo cp -f /etc/kubernetes/admin.conf ${REMOTE_KUBEDIR}/config
+        sudo chown 1000:1000 ${REMOTE_KUBEDIR}/config
         kubectl taint nodes --all node-role.kubernetes.io/master-
         kubectl label node ${vnode} role=master
 DEPLOY_MASTER
-   fi
+
+      [[ ${ONSITE} -eq 0 ]] && {
+        conf=~/.kube/config
+        mkdir ~/.kube/
+        [[ -f ${conf} ]] && rm -fr ${conf}
+        scp ${SSH_OPTS} cactus@$(get_admin_ip ${vnode}):${REMOTE_KUBEDIR}/config ~/.kube/
+      }
+    fi
   done
 }
 
@@ -116,7 +144,8 @@ function deploy_cni {
   if [[ -z ${cluster_states_cni} ]] || [[ "${cluster_states_cni}" == 'None' ]]; then
     cluster_states_cni=calico
   fi
-  master_exc "kubectl apply -f /home/cactus/kube-config/${cluster_states_cni}"
+
+  kube_apply ${cluster_states_cni}
 }
 
 function wait_cluster_ready {
@@ -126,7 +155,7 @@ function wait_cluster_ready {
   set +e
   echo "Wait for cluster to be ready ....."
   for attempt in $(seq "${total_attempts}"); do
-    master_exc "kubectl get nodes | grep -v NotReady | grep Ready"
+    kube_exc "kubectl get nodes | grep -v NotReady | grep Ready"
     case $? in
       0) echo "${attempt}> Success"; break ;;
       *) echo "${attempt}/${total_attempts}> cluster ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
@@ -137,14 +166,19 @@ function wait_cluster_ready {
 
   for vnode in "${vnodes[@]}"; do
     read -r -a labels <<< $(parse_labels ${vnode})
-    [[ -n "${labels[@]}" ]] && master_exc "kubectl label node ${vnode} ${labels[@]}"
+    [[ -n "${labels[@]}" ]] && kube_exc "kubectl label node ${vnode} ${labels[@]}"
   done
 }
 
 function deploy_components {
   [[ -n "${cluster_states_components[@]}" ]] && {
     for com in "${cluster_states_components[@]}"; do
-      master_exc "kubectl apply -f /home/cactus/kube-config/${com}"
+      kube_apply ${com}
+
+      # in case some objects deploy failed for the first time
+      # due to the resources referenced are not created yet
+      [[ ${com} =~ "istio" ]] && kube_apply ${com}
+
     done
   }
 }

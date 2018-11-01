@@ -16,6 +16,7 @@ $(notify_i "OPTIONS:" 2)
   -s  scenario short-name
   -p  Pod-name
   -P  VM prefix, \${prefix}_<nodename>
+  -r  Use onsite kube-config
   -h  help information
 
 $(notify_i "Input parameters to the build script are:" 2)
@@ -23,6 +24,7 @@ $(notify_i "Input parameters to the build script are:" 2)
    has to be defined in config directory (e.g. calico-noha).
 -p POD name as defined in the configuration directory, e.g. pod2
 -P Prefix of vm name, e.g. if prefix=cactus, vm name will be cactus_<node name>
+-r Choose to use on-site(configs on the master vm) or local kube-config directory
 -h Print this help information
 
 $(notify_i "[NOTE] sudo & virsh priviledges are needed for this script to run" 3)
@@ -44,10 +46,11 @@ export TERM=xterm
 CI_DEBUG=${CI_DEBUG:-0}; [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
 REPO_ROOT_PATH=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")
 DEPLOY_DIR=$(cd "${REPO_ROOT_PATH}/deploy"; pwd)
-CONF_DIR=${REPO_ROOT_PATH}/config
+CONF_DIR="${REPO_ROOT_PATH}/config"
 STORAGE_DIR=/var/cactus
 PREFIX=cactus
 CPU_PASS_THROUGH=${CPU_PASS_THROUGH:-1}
+ONSITE=${ONSITE:-0}
 
 mkdir -p ${STORAGE_DIR}
 
@@ -60,12 +63,13 @@ source "${DEPLOY_DIR}/k8s.sh"
 ##############################################################################
 # BEGIN of main
 #
-while getopts "p:s:P:h" OPTION
+while getopts "p:s:P:r:h" OPTION
 do
     case $OPTION in
         p) TARGET_POD=${OPTARG} ;;
         s) SCENARIO=${OPTARG} ;;
         P) PREFIX=${OPTARG} ;;
+        r) ONSITE+=1 ;;
         h) usage; exit 0 ;;
         *) notify_e "[ERROR] Arguments not according to new argument style\n" ;;
     esac

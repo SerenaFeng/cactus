@@ -11,3 +11,4 @@ cluster:
     components:
       - dashboard
       - metrics-server
+      - istio-demo.yaml
