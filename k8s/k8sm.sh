@@ -54,7 +54,7 @@ source ${K8S_ROOT}/prepare.sh
 source ${K8S_ROOT}/cni.sh
 
 function deploy-k8s() {
-    sudo kubeadm init --pod-network-cidr 10.244.0.1/16 --kubernetes-version v1.10.7
+    sudo kubeadm init --pod-network-cidr 10.244.0.1/16 --kubernetes-version v1.12.1
 }
 
 function config-kubectl() {

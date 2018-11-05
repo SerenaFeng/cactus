@@ -51,7 +51,7 @@ function render_service_cidr {
 }
 
 function render_istio {
- [[ -n "${cluster_states_components[@]}" ]] && [[ "${cluster_states_components[@]}" =~ "istio" ]] && {
+ [[ -n "${cluster_states_objects[@]}" ]] && [[ "${cluster_states_objects[@]}" =~ "istio" ]] && {
     echo ",MutatingAdmissionWebhook,ValidatingAdmissionWebhook"
   }
 }
@@ -181,7 +181,7 @@ function wait_cluster_ready {
   done
 }
 
-function deploy_components {
+function deploy_objects {
   [[ -n "${cluster_states_objects[@]}" ]] && {
     for obj in "${cluster_states_objects[@]}"; do
       [[ ${obj} =~ "istio" ]] && {

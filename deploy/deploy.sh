@@ -127,4 +127,4 @@ deploy_cni
 
 wait_cluster_ready
 
-deploy_components
+deploy_objects
