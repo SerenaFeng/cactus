@@ -8,6 +8,6 @@ cluster:
     cni: calico
     cri: docker
 #    csi:
-    components:
+    objects:
       - dashboard
       - metrics-server

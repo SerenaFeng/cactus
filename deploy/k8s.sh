@@ -5,26 +5,6 @@ LOCAL_KUBECONF=$HOME/.kube
 LOCAL_KUBEDIR="${REPO_ROOT_PATH}/kube-config"
 
 
-function parse_components {
-  set +x
-  compgen -v |
-  while read var; do {
-    [[ ${var} =~ cluster_states_components_ ]] && [[ -n ${!var} ]] && echo ${!var}
-  }
-  done || true
-  [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
-}
-
-function parse_cni {
-  set +x
-  compgen -v |
-  while read var; do {
-    [[ ${var} =~ cluster_states_cni_ ]] && [[ -n ${!var} ]] && echo ${!var}
-  }
-  done || true
-  [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
-}
-
 function parse_labels {
   set +x
   local vnode=${1};shift
@@ -202,18 +182,18 @@ function wait_cluster_ready {
 }
 
 function deploy_components {
-  [[ -n "${cluster_states_components[@]}" ]] && {
-    for com in "${cluster_states_components[@]}"; do
-      [[ ${com} =~ "istio" ]] && {
+  [[ -n "${cluster_states_objects[@]}" ]] && {
+    for obj in "${cluster_states_objects[@]}"; do
+      [[ ${obj} =~ "istio" ]] && {
         kube_apply istio/crds.yaml
         sleep 5
         # in case some objects deploy failed for the first time
         # due to the resources referenced are not created yet
-        kube_apply istio/${com}.yaml
-        kube_apply istio/${com}.yaml
+        kube_apply istio/${obj}.yaml
+        kube_apply istio/${obj}.yaml
         kube_exc "kubectl label namespace default istio-injection=enabled"
       } || {
-        kube_apply ${com}
+        kube_apply ${obj}
       }
     done
   }
