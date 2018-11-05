@@ -48,11 +48,13 @@ REPO_ROOT_PATH=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")
 DEPLOY_DIR=$(cd "${REPO_ROOT_PATH}/deploy"; pwd)
 CONF_DIR="${REPO_ROOT_PATH}/config"
 STORAGE_DIR=/var/cactus
+TMP_DIR=/tmp/cactus
 PREFIX=cactus
 CPU_PASS_THROUGH=${CPU_PASS_THROUGH:-1}
 ONSITE=${ONSITE:-0}
 
 mkdir -p ${STORAGE_DIR}
+mkdir -p ${TMP_DIR}
 
 source "${DEPLOY_DIR}/globals.sh"
 source "${DEPLOY_DIR}/lib.sh"

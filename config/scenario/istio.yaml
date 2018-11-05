@@ -9,5 +9,4 @@ cluster:
     cri: docker
 #    csi:
     components:
-      - dashboard
-      - metrics-server
+      - istio

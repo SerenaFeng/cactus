@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-REMOTE_KUBEDIR=/home/cactus/.kube
+REMOTE_KUBECONF=/home/cactus/.kube
+LOCAL_KUBECONF=$HOME/.kube
 LOCAL_KUBEDIR="${REPO_ROOT_PATH}/kube-config"
 
 
@@ -48,34 +49,63 @@ function get_kube_join {
 
 function kube_exc {
   local cmdstr=${1}
-  if [ ${ONSITE} -eq 0 ]; then
+  [[ ${ONSITE} -eq 0 ]] && {
     eval "${cmdstr}"
-  else
+  } || {
     master_exc "${cmdstr}"
-  fi
+  }
 }
 
 function kube_apply {
-  if [ ${ONSITE} -eq 0 ]; then
+  [[ ${ONSITE} -eq 0 ]] && {
     kubectl apply -f ${LOCAL_KUBEDIR}/${1}
-  else
-    master_exc "kubectl apply -f ${REMOTE_KUBEDIR}/${1}"
-  fi
+  } || {
+    master_exc "kubectl apply -f ${REMOTE_KUBECONF}/${1}"
+  }
+}
+
+function render_service_cidr {
+  [[ -n ${cluster_service_cidr} ]] && {
+    echo "serviceSubnet: ${cluster_service_cidr}"
+   }
+}
+
+function render_istio {
+ [[ -n "${cluster_states_components[@]}" ]] && [[ "${cluster_states_components[@]}" =~ "istio" ]] && {
+    echo ",MutatingAdmissionWebhook,ValidatingAdmissionWebhook"
+  }
+}
+
+function compose_kubeadm_config {
+  vnode=${1}
+
+  [[ -n ${cluster_pod_cidr} ]] && cluster_pod_cidr="10.244.0.0/16"
+  cat << KUBEADM > ${TMP_DIR}/kubeadm.conf 
+apiVersion: kubeadm.k8s.io/v1alpha2
+kind: MasterConfiguration
+api:
+  advertiseAddress: $(get_mgmt_ip ${vnode})
+apiServerExtraArgs:
+  enable-admission-plugins: NodeRestriction$(render_istio)
+networking:
+  podSubnet: ${cluster_pod_cidr}
+  $(render_service_cidr)
+kubernetesVersion: ${cluster_version}
+clusterName: ${cluster_name}
+nodeRegistration:
+  name: $(eval echo "\$nodes_${vnode}_hostname")
+KUBEADM
 }
 
 function deploy_master {
   for vnode in "${vnodes[@]}"; do
     if is_master ${vnode}; then
-      args="--node-name $(eval echo "\$nodes_${vnode}_hostname")" 
-      args="${args} --apiserver-advertise-address $(get_mgmt_ip ${vnode})"
-
-      [[ -n ${cluster_domain} ]] && args="${args} --service-dns-domain ${cluster_domain}"
-      [[ -n ${cluster_pod_cidr} ]] && args="${args} --pod-network-cidr ${cluster_pod_cidr}"
-      [[ -n ${cluster_service_cidr} ]] && args="${args} --service-cidr ${cluster_service_cidr}"
-      [[ -n ${cluster_version} ]] && args="${args} --kubernetes-version ${cluster_version}"
+      sshe="cactus@$(get_admin_ip ${vnode})"
+      compose_kubeadm_config ${vnode}
+      scp ${SSH_OPTS} ${TMP_DIR}/kubeadm.conf ${sshe}:/home/cactus
 
       echo "Begin deploying master ${vnode} ... "
-      ssh ${SSH_OPTS} cactus@$(get_admin_ip ${vnode}) bash -s -e << DEPLOY_MASTER
+      ssh ${SSH_OPTS} ${sshe} bash -s -e << DEPLOY_MASTER
         sudo -i
         set -ex
 
@@ -87,24 +117,25 @@ function deploy_master {
         systemctl restart docker
 
         echo -n "Deploy k8s with kubeadm, this will take a few minutes, please wait ..."
-        kubeadm init ${args}
+        kubeadm init --config /home/cactus/kubeadm.conf
 
 
         echo -n "Configure kubectl"
         exit
         set -ex
-        mkdir -p ${REMOTE_KUBEDIR}
-        sudo cp -f /etc/kubernetes/admin.conf ${REMOTE_KUBEDIR}/config
-        sudo chown 1000:1000 ${REMOTE_KUBEDIR}/config
+        mkdir -p ${REMOTE_KUBECONF}
+        sudo cp -f /etc/kubernetes/admin.conf ${REMOTE_KUBECONF}/config
+        sudo chown -R 1000:1000 ${REMOTE_KUBECONF}
         kubectl taint nodes --all node-role.kubernetes.io/master-
         kubectl label node ${vnode} role=master
 DEPLOY_MASTER
 
       [[ ${ONSITE} -eq 0 ]] && {
-        conf=~/.kube/config
-        mkdir ~/.kube/
+        local conf=${LOCAL_KUBECONF}/config
+        [[ ! -d ${LOCAL_KUBECONF} ]] && mkdir ${LOCAL_KUBECONF}
         [[ -f ${conf} ]] && rm -fr ${conf}
-        scp ${SSH_OPTS} cactus@$(get_admin_ip ${vnode}):${REMOTE_KUBEDIR}/config ~/.kube/
+        scp ${SSH_OPTS} ${sshe}:${REMOTE_KUBECONF}/config ${LOCAL_KUBECONF}
+        chown -R $(id -u ${SUDO_USER}):$(id -g ${SUDO_USER}) ${LOCAL_KUBECONF}
       }
     fi
   done
@@ -116,8 +147,8 @@ function deploy_minion {
 
   for vnode in "${vnodes[@]}"; do
     if ! is_master ${vnode}; then
+
       echo "Begin deploying minion ${vnode} ..."
-      args="--node-name $(eval echo "\$nodes_${vnode}_hostname")"
       ssh ${SSH_OPTS} cactus@$(get_admin_ip ${vnode}) bash -s -e << DEPLOY_MINION
         sudo -i
         set -ex
@@ -130,7 +161,7 @@ function deploy_minion {
         systemctl restart docker
 
         echo -n "Begin to join cluster"
-        ${KUBE_JOIN} ${args}
+        ${KUBE_JOIN} --node-name $(eval echo "\$nodes_${vnode}_hostname")
 DEPLOY_MINION
       fi
       echo "Finish deploying minion ${vnode} ... "
@@ -173,12 +204,17 @@ function wait_cluster_ready {
 function deploy_components {
   [[ -n "${cluster_states_components[@]}" ]] && {
     for com in "${cluster_states_components[@]}"; do
-      kube_apply ${com}
-
-      # in case some objects deploy failed for the first time
-      # due to the resources referenced are not created yet
-      [[ ${com} =~ "istio" ]] && kube_apply ${com}
-
+      [[ ${com} =~ "istio" ]] && {
+        kube_apply istio/crds.yaml
+        sleep 5
+        # in case some objects deploy failed for the first time
+        # due to the resources referenced are not created yet
+        kube_apply istio/${com}.yaml
+        kube_apply istio/${com}.yaml
+        kube_exc "kubectl label namespace default istio-injection=enabled"
+      } || {
+        kube_apply ${com}
+      }
     done
   }
 }

@@ -11,7 +11,7 @@ CONFDIR ?= ./kube-config
 OBJS := calico dashboard example flannel heapster hostpath metrics-server
 HELP := =y print this help information
 DEBUG ?= false
-scenario ?= calico-noha
+scenario ?= istio
 where ?= vms
 pod ?= pod1
 prefix ?= cactus

@@ -12,14 +12,14 @@
 #
 
 function generate_ssh_key {
-  local cactus_ssh_key=$(basename "${SSH_KEY}")
+  local cactus_ssh_key=${TMP_DIR}/$(basename "${SSH_KEY}")
   local user=${USER}
   if [ -n "${SUDO_USER}" ] && [ "${SUDO_USER}" != 'root' ]; then
     user=${SUDO_USER}
   fi
 
   if [ -f "${SSH_KEY}" ]; then
-    cp "${SSH_KEY}" .
+    cp "${SSH_KEY}" ${TMP_DIR}
     ssh-keygen -f "${cactus_ssh_key}" -y > "${cactus_ssh_key}.pub"
   fi
 

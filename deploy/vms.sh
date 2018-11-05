@@ -30,7 +30,7 @@ function prepare_networks {
   for tp in "${DEPLOY_DIR}/"*.template; do
     eval "cat <<-EOF
       $(<"${tp}")
-EOF" 2> /dev/null > "${tp%.template}"
+EOF" 2> /dev/null > "${TMP_DIR}/$(basename ${tp%.template})"
   done
 }
 
@@ -67,6 +67,7 @@ function cleanup_vms {
       xargs --no-run-if-empty -I{} sudo rm -f {}
     # TODO command 'undefine' doesn't support option --nvram
     virsh undefine "${node}" --remove-all-storage
+    ssh-keygen -R $(get_admin_ip ${node}) || true
   done
 }
 
@@ -101,8 +102,8 @@ function create_networks {
       virsh net-undefine "${net}"
     fi
     # in case of custom network, host should already have the bridge in place
-    if [ -f "net_${net}.xml" ] && [ ! -d "/sys/class/net/${net}/bridge" ]; then
-      virsh net-define "net_${net}.xml"
+    if [ -f "${TMP_DIR}/net_${net}.xml" ] && [ ! -d "/sys/class/net/${net}/bridge" ]; then
+      virsh net-define "${TMP_DIR}/net_${net}.xml"
       virsh net-autostart "${net}"
       virsh net-start "${net}"
     fi
