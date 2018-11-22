@@ -12,20 +12,22 @@
 #
 
 function generate_ssh_key {
-  local cactus_ssh_key=${TMP_DIR}/$(basename "${SSH_KEY}")
   local user=${USER}
   if [ -n "${SUDO_USER}" ] && [ "${SUDO_USER}" != 'root' ]; then
     user=${SUDO_USER}
   fi
 
   if [ -f "${SSH_KEY}" ]; then
-    cp "${SSH_KEY}" ${TMP_DIR}
-    ssh-keygen -f "${cactus_ssh_key}" -y > "${cactus_ssh_key}.pub"
+    cp "${SSH_KEY}" ${USER_SSH_KEY}
+    ssh-keygen -f "${USER_SSH_KEY}" -y > "${USER_SSH_KEY}.pub"
   fi
 
-  [ -f "${cactus_ssh_key}" ] || ssh-keygen -f "${cactus_ssh_key}" -N ''
-  sudo install -D -o "${user}" -m 0600 "${cactus_ssh_key}" "${SSH_KEY}"
-  sudo install -D -o "${user}" -m 0600 "${cactus_ssh_key}.pub" "${SSH_KEY}.pub"
+  [ -f "${USER_SSH_KEY}" ] || ssh-keygen -f "${USER_SSH_KEY}" -N ''
+  
+  [ -f "${SSH_KEY}" ] || {
+    sudo install -D -o "${user}" -m 0600 "${USER_SSH_KEY}" "${SSH_KEY}"
+    sudo install -D -o "${user}" -m 0600 "${USER_SSH_KEY}.pub" "${SSH_KEY}.pub"
+  }
 }
 
 function parse_idf {
