@@ -19,6 +19,7 @@ The specifications of VMS. Note that node_id must start from "2", because it is 
 figure of admin and mgmt IP address. Put under config/lab
 
 **scenario.yaml**
+
 This file determines what kind of Kubernetes will be deployed. Currently, CRI is fixed to docker,
 and CSI is not supported. Put under config/scenario
 
@@ -27,10 +28,15 @@ Deployment
 
   .. code-block:: bash
 
-  make install DEBUG=<true|false> where=<vms|local> pod=<pod-name> scenario=<scenario-name>
+  make install debug=<true|false> where=<vms|local> p=<pod-name> s=<scenario-name> P=<prefix>
 
 *DEBUG*: whether to track bash execution commands or not
+
 *where*: where to deploy the Kubernetes, only vms is supported
-*pod*: pod name, will substitute "xxx" in idf-xxx.yaml & pdf-xxx.yaml
-*scenario*: scenario name, will substitute "scenario" in scenario.yaml
+
+*p*: pod name, defined under config/labs, substitute "xxx" in idf-xxx.yaml & pdf-xxx.yaml
+
+*s*: scenario name, defined under config/scenario, substitute "scenario" in scenario.yaml
+
+*P*: prefix of node name, joint node name with "_"
 
