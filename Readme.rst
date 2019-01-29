@@ -30,13 +30,9 @@ Deployment
 
   make install debug=<true|false> where=<vms|local> p=<pod-name> s=<scenario-name> P=<prefix>
 
-*DEBUG*: whether to track bash execution commands or not
-
-*where*: where to deploy the Kubernetes, only vms is supported
-
-*p*: pod name, defined under config/labs, substitute "xxx" in idf-xxx.yaml & pdf-xxx.yaml
-
-*s*: scenario name, defined under config/scenario, substitute "scenario" in scenario.yaml
-
-*P*: prefix of node name, joint node name with "_"
+- *debug*: whether to track bash execution commands or not
+- *where*: where to deploy the Kubernetes, only vms is supported
+- *p*: pod name, defined under config/labs, substitute "xxx" in idf-xxx.yaml & pdf-xxx.yaml
+- *s*: scenario name, defined under config/scenario, substitute "scenario" in scenario.yaml
+- *P*: prefix of node name, joint node name with "_"
 
