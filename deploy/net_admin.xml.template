@@ -7,12 +7,12 @@
  http://www.apache.org/licenses/LICENSE-2.0
 -->
 <network>
-  <name>cactus_public</name>
-  <bridge name="${idf_cactus_jumphost_bridges_public}"/>
+  <name>${idf_cactus_jumphost_bridges_admin}</name>
+  <bridge name="${idf_cactus_jumphost_bridges_admin}"/>
   <forward mode="nat"/>
-  <ip address="${idf_cactus_jumphost_fixed_ips_public%.*}.1" netmask="255.255.255.0">
+  <ip address="${idf_cactus_jumphost_fixed_ips_admin%.*}.1" netmask="255.255.255.0">
     <dhcp>
-      <range start="${idf_cactus_jumphost_fixed_ips_public%.*}.2" end="${idf_cactus_jumphost_fixed_ips_public%.*}.254"/>
+      <range start="${idf_cactus_jumphost_fixed_ips_admin%.*}.2" end="${idf_cactus_jumphost_fixed_ips_admin%.*}.254"/>
     </dhcp>
   </ip>
 </network>

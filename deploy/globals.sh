@@ -10,9 +10,10 @@
 # Global variables
 export CI_DEBUG=${CI_DEBUG:-0}; [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
 export SSH_KEY=${SSH_KEY:-"${STORAGE_DIR}/cactus.rsa"}
+export USER_SSH_KEY=${USER_SSH_KEY:-"${HOME}/.ssh/${PREFIX}.rsa"}
 
 # Derivated from above global vars
-export SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${SSH_KEY}"
+export SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${USER_SSH_KEY}"
 
 # same as `notify_i` + trailing '\n';
 function notify() {

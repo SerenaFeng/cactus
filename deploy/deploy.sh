@@ -48,18 +48,10 @@ REPO_ROOT_PATH=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")
 DEPLOY_DIR=$(cd "${REPO_ROOT_PATH}/deploy"; pwd)
 CONF_DIR="${REPO_ROOT_PATH}/config"
 STORAGE_DIR=/var/cactus
-TMP_DIR=/tmp/cactus
 PREFIX=cactus
+TMP_DIR=/tmp/cactus_${PREFIX}
 CPU_PASS_THROUGH=${CPU_PASS_THROUGH:-1}
 ONSITE=${ONSITE:-0}
-
-mkdir -p ${STORAGE_DIR}
-mkdir -p ${TMP_DIR}
-
-source "${DEPLOY_DIR}/globals.sh"
-source "${DEPLOY_DIR}/lib.sh"
-source "${DEPLOY_DIR}/vms.sh"
-source "${DEPLOY_DIR}/k8s.sh"
 
 
 ##############################################################################
@@ -70,7 +62,7 @@ do
     case $OPTION in
         p) TARGET_POD=${OPTARG} ;;
         s) SCENARIO=${OPTARG} ;;
-        P) PREFIX=${OPTARG} ;;
+        P) PREFIX=${OPTARG}; TMP_DIR=/tmp/cactus_${PREFIX} ;;
         r) ONSITE+=1 ;;
         h) usage; exit 0 ;;
         *) notify_e "[ERROR] Arguments not according to new argument style\n" ;;
@@ -82,6 +74,14 @@ if [[ "$(sudo whoami)" != 'root' ]]; then
   exit 1
 fi
 
+
+mkdir -p ${STORAGE_DIR}
+mkdir -p ${TMP_DIR}
+
+source "${DEPLOY_DIR}/globals.sh"
+source "${DEPLOY_DIR}/lib.sh"
+source "${DEPLOY_DIR}/vms.sh"
+source "${DEPLOY_DIR}/k8s.sh"
 
 # Enable the automatic exit trap
 trap do_exit SIGINT SIGTERM EXIT

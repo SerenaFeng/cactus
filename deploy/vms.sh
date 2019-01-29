@@ -67,7 +67,7 @@ function cleanup_vms {
       xargs --no-run-if-empty -I{} sudo rm -f {}
     # TODO command 'undefine' doesn't support option --nvram
     virsh undefine "${node}" --remove-all-storage
-    ssh-keygen -R $(get_admin_ip ${node}) || true
+    ssh-keygen -R $(get_admin_ip ${node##${PREFIX}_}) || true
   done
 }
 
@@ -102,8 +102,8 @@ function create_networks {
       virsh net-undefine "${net}"
     fi
     # in case of custom network, host should already have the bridge in place
-    if [ -f "${TMP_DIR}/net_${net}.xml" ] && [ ! -d "/sys/class/net/${net}/bridge" ]; then
-      virsh net-define "${TMP_DIR}/net_${net}.xml"
+    if [ -f "${TMP_DIR}/net_${br}.xml" ] && [ ! -d "/sys/class/net/${net}/bridge" ]; then
+      virsh net-define "${TMP_DIR}/net_${br}.xml"
       virsh net-autostart "${net}"
       virsh net-start "${net}"
     fi

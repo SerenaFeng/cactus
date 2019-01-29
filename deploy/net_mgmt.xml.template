@@ -7,7 +7,7 @@
  http://www.apache.org/licenses/LICENSE-2.0
 -->
 <network>
-  <name>cactus_mgmt</name>
+  <name>${idf_cactus_jumphost_bridges_mgmt}</name>
   <bridge name="${idf_cactus_jumphost_bridges_mgmt}"/>
   <forward mode="nat"/>
   <ip address="${idf_cactus_jumphost_fixed_ips_mgmt%.*}.1" netmask="255.255.255.0">
