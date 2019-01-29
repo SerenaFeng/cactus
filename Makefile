@@ -10,11 +10,11 @@ MAKEFLAGS += --no-builtin-rules
 CONFDIR ?= ./kube-config
 OBJS := calico dashboard example flannel heapster hostpath metrics-server
 HELP := =y print this help information
-DEBUG ?= false
-scenario ?= istio
+debug ?= false
+s ?= istio  # scenario
 where ?= vms
-pod ?= pod1
-prefix ?= cactus
+p ?= pod1 # lowercase p, pod name
+P ?= cactus # uppercase P, prefix for node name
 
 define INSTALL_HELP
 # Deploy k8s locally or on vms.
@@ -22,7 +22,9 @@ define INSTALL_HELP
 # Args:
 #   help: $(HELP)
 #   where: local or vms
-#   scenario: deploy states, such as calico-defaults-noha
+#   s: scenario, defined under config/scenario, default by istio
+#   p: pod name, definded under config/labs, default by pod1
+#   P: prefix for node name, default by cactus
 # Example:
 #   make install where=vms
 #   
@@ -36,7 +38,7 @@ install:
 	bash k8s/k8sm.sh
 else
 install:
-	sudo CI_DEBUG=$(DEBUG) bash deploy/deploy.sh -s $(scenario) -p $(pod) -P $(prefix)
+	sudo CI_DEBUG=$(debug) bash deploy/deploy.sh -s $(s) -p $(p) -P $(P)
 endif
 
 define APPLY_HELP

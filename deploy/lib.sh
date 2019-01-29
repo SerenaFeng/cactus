@@ -29,16 +29,32 @@ function generate_ssh_key {
 }
 
 function parse_idf {
-  eval "$(parse_yaml "${CONF_DIR}/lab/idf-${TARGET_POD}.yaml")"
+  idf="${CONF_DIR}/lab/idf-${TARGET_POD}.yaml"
+  [[ -f ${idf} ]] && eval $(parse_yaml ${idf}) || {
+    echo "${idf} must exist"
+    exit 5
+  }
 }
 
 function parse_pdf {
-  eval $(python ${DEPLOY_DIR}/parse_pdf.py -y ${CONF_DIR}/lab/pdf-${TARGET_POD}.yaml 2>&1)
-  IFS=':' read -a vnodes <<< "${nodes}"
+  pdf="${CONF_DIR}/lab/pdf-${TARGET_POD}.yaml"
+  [[ -f ${pdf} ]] && {
+    eval $(python ${DEPLOY_DIR}/parse_pdf.py -y ${pdf} 2>&1)
+    IFS=':' read -a vnodes <<< "${nodes}"
+  } || {
+    echo "${pdf} must exist"
+    exit 5
+  }
 }
 
 function parse_scenario {
-  eval "$(parse_yaml "${CONF_DIR}/scenario/${SCENARIO}.yaml")"
+  scenario="${CONF_DIR}/scenario/${SCENARIO}.yaml"
+  [[ -f ${scenario} ]] && {
+    eval $(parse_yaml ${scenario})
+  } || {
+    echo "${scenario} must exist"
+    exit 5
+  }
 }
 
 function parse_yaml {

@@ -93,15 +93,15 @@ if ! virsh list >/dev/null 2>&1; then
 fi
 
 # Infra setup
-generate_ssh_key
-
-build_images
-
 parse_idf
 
 parse_pdf
 
 parse_scenario
+
+generate_ssh_key
+
+build_images
 
 prepare_networks
 
