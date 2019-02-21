@@ -133,10 +133,12 @@ function create_vms {
     cpu_para="--cpu host-passthrough" || \
     cpu_para=""
 
+    [[ $(eval echo "\$nodes_${vnode}_node_features") =~ hugepage ]] && hugepage="--memorybacking hugepages=yes" || hugepage=""
+
     # shellcheck disable=SC2086
     virt-install --name "${PREFIX}_${vnode}" \
-    --memory $(eval echo "\$nodes_${vnode}_node_memory") \
-    --vcpus $(eval echo "\$nodes_${vnode}_node_cpus")\
+    --memory $(eval echo "\$nodes_${vnode}_node_memory") ${hugepage} \
+    --vcpus $(eval echo "\$nodes_${vnode}_node_cpus") \
     ${cpu_para} --accelerate ${net_args} \
     --disk path="${STORAGE_DIR}/${PREFIX}_${vnode}.qcow2",format=qcow2,bus=virtio,cache=none,io=native \
     --os-type linux --os-variant none \
