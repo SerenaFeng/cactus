@@ -90,6 +90,7 @@ function deploy_master {
         set -ex
 
         echo -n "Make sure docker&kubelet is ready ..."
+        sysctl vm.nr_hugepages=4096
         groupadd docker
         usermod -aG docker cactus
         systemctl enable docker.service
@@ -134,6 +135,7 @@ function deploy_minion {
         set -ex
 
         echo -n "Make sure docker&kubelet is ready ..."
+        sysctl vm.nr_hugepages=4096
         groupadd docker
         usermod -aG docker cactus
         systemctl enable docker.service
