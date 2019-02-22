@@ -2,7 +2,7 @@
 #!/bin/sh
 
 cd /imagedata
-
+version=${1##*v}
 K8S_TMP=/tmp/k8s
 K8S_YUM_REPO=/tmp/k8s/k8s.repo
 K8S_PUBKEY=/imagedata/cactus.rsa.pub
@@ -36,7 +36,7 @@ function create_master_centos7_image {
     DIB_DEV_USER_AUTHORIZED_KEYS=$K8S_PUBKEY \
     disk-image-create centos7 vm dhcp-all-interfaces \
     cloud-init-nocloud devuser install-static common-static master-static \
-    -p kubelet,kubeadm,kubectl,docker,vim \
+    -p kubelet-${version},kubeadm-${version},kubectl-${version},docker,vim \
     -o ${image_name} -t ${image_format}
 
 }
@@ -54,12 +54,12 @@ function create_minion_centos7_image {
     DIB_DEV_USER_AUTHORIZED_KEYS=$K8S_PUBKEY \
     disk-image-create centos7 vm dhcp-all-interfaces \
     cloud-init-nocloud devuser install-static common-static \
-    -p kubelet,kubeadm,docker,vim \
+    -p kubelet-${version},kubeadm-${version},docker,vim \
     -o ${image_name} -t ${image_format}
 }
 
 #for image_item in $( set | awk '{FS="="}  /^VM_BASE_IMAGE/ {print $2}' ); do
-for image_item in k8s/master.qcow2 k8s/minion.qcow2; do
+for image_item in k8s_${1}/master.qcow2 k8s_${1}/minion.qcow2; do
     echo "Image [${image_item}] will be created...."
 
     [[ -f ${image_item} ]] && {

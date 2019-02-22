@@ -54,7 +54,7 @@ function build_images {
            --privileged \
            --rm \
            ${builder_image} \
-           bash /create_image.sh
+           bash /create_image.sh ${cluster_version}
 }
 
 function cleanup_vms {
@@ -72,8 +72,9 @@ function cleanup_vms {
 }
 
 function prepare_vms {
-  local image_dir=${STORAGE_DIR}
-
+  local image_dir=${STORAGE_DIR}/k8s_${cluster_version}
+  local disk_dir=${STORAGE_DIR}/${PREFIX}_${cluster_version}
+  mkdir ${disk_dir} || true
   cleanup_vms
 
   # Create vnode images and resize OS disk image for each foundation node VM
@@ -81,14 +82,14 @@ function prepare_vms {
     if [ $(eval echo "\$nodes_${vnode}_enabled") == "True" ]; then
       if is_master ${vnode}; then
         echo "preparing for master vnode [${vnode}]"
-        image="k8s/master.qcow2"
+        image="master.qcow2"
       else
         echo "preparing for minion vnode [${vnode}]"
-        image="k8s/minion.qcow2"
+        image="minion.qcow2"
       fi
-      cp "${image_dir}/${image}" "${image_dir}/${PREFIX}_${vnode}.qcow2"
+      cp "${image_dir}/${image}" "${disk_dir}/${vnode}.qcow2"
       disk_capacity="nodes_${vnode}_node_disk"
-      qemu-img resize "${image_dir}/${PREFIX}_${vnode}.qcow2" ${!disk_capacity}
+      qemu-img resize "${disk_dir}/${vnode}.qcow2" ${!disk_capacity}
     fi
   done
 }
@@ -140,7 +141,7 @@ function create_vms {
     --memory $(eval echo "\$nodes_${vnode}_node_memory") ${hugepage} \
     --vcpus $(eval echo "\$nodes_${vnode}_node_cpus") \
     ${cpu_para} --accelerate ${net_args} \
-    --disk path="${STORAGE_DIR}/${PREFIX}_${vnode}.qcow2",format=qcow2,bus=virtio,cache=none,io=native \
+    --disk path="${STORAGE_DIR}/${PREFIX}_${cluster_version}/${vnode}.qcow2",format=qcow2,bus=virtio,cache=none,io=native \
     --os-type linux --os-variant none \
     --boot hd --vnc --console pty --autostart --noreboot \
     --noautoconsole \
