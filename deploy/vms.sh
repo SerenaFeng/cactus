@@ -67,6 +67,7 @@ function cleanup_vms {
       xargs --no-run-if-empty -I{} sudo rm -f {}
     # TODO command 'undefine' doesn't support option --nvram
     virsh undefine "${node}" --remove-all-storage
+    #ssh-keygen -f $(eval echo ~${SUDO_USER})/.ssh/known_hosts -R $(get_admin_ip ${node##${PREFIX}_}) || true
     ssh-keygen -R $(get_admin_ip ${node##${PREFIX}_}) || true
   done
 }

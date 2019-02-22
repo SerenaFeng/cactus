@@ -41,6 +41,11 @@ install:
 	sudo CI_DEBUG=$(debug) bash deploy/deploy.sh -s $(s) -p $(p) -P $(P)
 endif
 
+.phone: stop
+stop: 
+	bash ./stop.sh
+
+
 define APPLY_HELP
 # Apply objects on k8s.
 #

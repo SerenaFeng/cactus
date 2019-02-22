@@ -77,9 +77,20 @@ nodeRegistration:
 KUBEADM
 }
 
+function cal_nr_hugepages {
+  vnode=${1}
+  [[ $(eval echo "\$nodes_${vnode}_node_features") =~ hugepage ]] && {
+    mem=$(eval echo "\$nodes_${vnode}_node_memory")
+    nr_hugepages=$((${mem} * 1024 / 2048 / 2))
+  } || nr_hugepages=0
+  echo ${nr_hugepages}
+}
+
 function deploy_master {
   for vnode in "${vnodes[@]}"; do
     if is_master ${vnode}; then
+      nr_hugepages=$(cal_nr_hugepages ${vnode})
+
       sshe="cactus@$(get_admin_ip ${vnode})"
       compose_kubeadm_config ${vnode}
       scp ${SSH_OPTS} ${TMP_DIR}/kubeadm.conf ${sshe}:/home/cactus
@@ -90,7 +101,7 @@ function deploy_master {
         set -ex
 
         echo -n "Make sure docker&kubelet is ready ..."
-        sysctl vm.nr_hugepages=4096
+        [[ ${nr_hugepages} != 0 ]] && sysctl vm.nr_hugepages=${nr_hugepages}
         groupadd docker
         usermod -aG docker cactus
         systemctl enable docker.service
@@ -128,6 +139,7 @@ function deploy_minion {
 
   for vnode in "${vnodes[@]}"; do
     if ! is_master ${vnode}; then
+      nr_hugepages=$(cal_nr_hugepages ${vnode})
 
       echo "Begin deploying minion ${vnode} ..."
       ssh ${SSH_OPTS} cactus@$(get_admin_ip ${vnode}) bash -s -e << DEPLOY_MINION
@@ -135,7 +147,7 @@ function deploy_minion {
         set -ex
 
         echo -n "Make sure docker&kubelet is ready ..."
-        sysctl vm.nr_hugepages=4096
+        [[ ${nr_hugepages} != 0 ]] && sysctl vm.nr_hugepages=${nr_hugepages}
         groupadd docker
         usermod -aG docker cactus
         systemctl enable docker.service
