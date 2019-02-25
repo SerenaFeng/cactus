@@ -50,31 +50,14 @@ function render_service_cidr {
    }
 }
 
-function render_istio {
- [[ -n "${cluster_states_objects[@]}" ]] && [[ "${cluster_states_objects[@]}" =~ "istio" ]] && {
-    echo ",MutatingAdmissionWebhook,ValidatingAdmissionWebhook"
-  }
-}
-
 function compose_kubeadm_config {
+  template=${DEPLOY_DIR}/templates/kubeadm-${cluster_version%.*}.template
   vnode=${1}
-
   [[ -n ${cluster_pod_cidr} ]] && cluster_pod_cidr="10.244.0.0/16"
-  cat << KUBEADM > ${TMP_DIR}/kubeadm.conf 
-apiVersion: kubeadm.k8s.io/v1alpha2
-kind: MasterConfiguration
-api:
-  advertiseAddress: $(get_mgmt_ip ${vnode})
-apiServerExtraArgs:
-  enable-admission-plugins: NodeRestriction$(render_istio)
-networking:
-  podSubnet: ${cluster_pod_cidr}
-  $(render_service_cidr)
-kubernetesVersion: ${cluster_version}
-clusterName: ${cluster_name}
-nodeRegistration:
-  name: $(eval echo "\$nodes_${vnode}_hostname")
-KUBEADM
+
+  eval "cat <<-EOF
+$(<"${template}")
+EOF" 2> /dev/null > ${TMP_DIR}/kubeadm.conf
 }
 
 function cal_nr_hugepages {
@@ -210,5 +193,26 @@ function deploy_objects {
         kube_apply ${obj}
       }
     done
-  }
+  } || true
+}
+
+function deploy_helm {
+  [[ -n "${cluster_states_helm_version}" ]] && {
+    ssh ${SSH_OPTS} cactus@$(get_master) bash -s -e << DEPLOY_HELM
+      sudo -i
+      set -ex
+
+      echo -n "Begin to install helm ..."
+      curl https://raw.githubusercontent.com/kubernetes/helm/${cluster_states_helm_version}/scripts/get > ./get
+      chmod +x ./get
+      bash ./get -v ${cluster_states_helm_version}
+
+      exit
+      set -ex
+      helm init --wait --service-account tiller
+      helm repo remove stable || true
+      helm version || true
+DEPLOY_HELM
+  } || true
+
 }

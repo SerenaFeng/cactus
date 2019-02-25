@@ -1,0 +1,18 @@
+---
+apiVersion: kubeadm.k8s.io/v1beta1
+kind: InitConfiguration
+nodeRegistration:
+  name: $(eval echo "\$nodes_${vnode}_hostname")
+---
+apiVersion: kubeadm.k8s.io/v1beta1
+kind: ClusterConfiguration
+apiServer:
+  extraArgs:
+    advertise-address: $(get_mgmt_ip ${vnode})
+    enable-admission-plugins: ${cluster_enable_admission}
+networking:
+  podSubnet: ${cluster_pod_cidr}
+  $(render_service_cidr)
+kubernetesVersion: ${cluster_version}
+clusterName: ${cluster_name}
+

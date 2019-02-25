@@ -2,6 +2,7 @@
 cluster:
   domain: cactus.k8s
   version: v1.12.2
+  enable_admission: NodeRestriction
   pod_cidr: 10.244.0.0/16
 # service_cidr: 192.168.11.0/24
   states:

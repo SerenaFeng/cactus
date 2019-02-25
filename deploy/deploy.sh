@@ -57,7 +57,7 @@ ONSITE=${ONSITE:-0}
 ##############################################################################
 # BEGIN of main
 #
-while getopts "p:s:P:r:h" OPTION
+while getopts "p:s:P:rh" OPTION
 do
     case $OPTION in
         p) TARGET_POD=${OPTARG} ;;
@@ -128,3 +128,5 @@ deploy_cni
 wait_cluster_ready
 
 deploy_objects
+
+deploy_helm
