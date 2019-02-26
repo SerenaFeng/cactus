@@ -1,19 +1,29 @@
 #!/bin/bash
 
-USAGE="Supported Commands:\n
-  sys:   under kube-system namespace \n
-  istio: under istio-system namespace \n
-  all:   under all namespaces \n
-  apply: kubectl apply -f \n
-  del:   kubectl delete -f \n
-  get:   kubectl get \n
-  proxy: kubectl proxy --accept-hosts='^*$' --address='10.62.105.17'\n
-  top:   kubectl -n kube-system top \n
-  des|describe:   kubectl describe 
+USAGE="
+Supported Commands:
+  a|apply:      kubectl apply -f
+  c|create:     kubectl create
+  d|del|delete: kubectl delete -f
+  g|get:        kubectl get
+  l|label:      kubectl label
+  p|proxy:      kubectl proxy --accept-hosts='^*$' --address='10.62.105.17'
+  t|top:        kubectl -n kube-system top
+  des|describe: kubectl describe
+
+Support namespace abbreviations:
+  sys:          under kube-system namespace
+  istio:        under istio-system namespace
+  all:          under all namespaces
+
+Usage:
+  k [ns_abbr] [cmd] [options]
+or
+  k [cmd] [options]
 "
 
 if [ "$#" == "0" ]; then
-  echo -e $USAGE
+  echo -e "$USAGE"
   exit 1
 fi
 
@@ -30,10 +40,20 @@ cmd=$1
 shift
 
 case $cmd in
-  apply) kubectl apply -f $@ ;;
-  del)   kubectl delete -f $@ ;;
-  get)   kubectl get $@ $OPTIONS;;
-  proxy) kubectl proxy --accept-hosts='^*$' --address='10.62.105.17' ;;
-  top)   kubectl top $@ $OPTIONS;;
-  des|describe)   kubectl describe $@ $OPTIONS;;
+  a|apply) kubectl apply -f $@ $OPTIONS ;;
+  d|del|delete) 
+    [[ $# -gt 1 ]] && [[ ! $2 =~ ^-.* ]] && {
+      kubectl delete $@ $OPTIONS || true
+    } || {
+      kubectl delete -f $@ $OPTIONS || true
+    }
+    ;;
+  c|create)   kubectl create $@ $OPTIONS ;;
+  e|edit)   kubectl edit $@ $OPTIONS ;;
+  g|get)   kubectl get $@ $OPTIONS ;;
+  l|label)   kubectl label $@ $OPTIONS ;;
+  p|proxy) kubectl proxy --accept-hosts='^*$' --address='10.62.105.17' ;;
+  t|top)   kubectl top $@ $OPTIONS ;;
+  des|describe)   kubectl describe $@ $OPTIONS ;;
+  *) kubectl $cmd $@ $OPTIONS ;;
 esac
