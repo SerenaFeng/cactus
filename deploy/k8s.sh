@@ -3,7 +3,7 @@
 REMOTE_KUBECONF=/home/cactus/.kube
 LOCAL_KUBECONF=$HOME/.kube
 LOCAL_KUBEDIR="${REPO_ROOT_PATH}/kube-config"
-
+helm=$(which helm)
 
 function parse_labels {
   set +x
@@ -30,7 +30,7 @@ function get_kube_join {
 function kube_exc {
   local cmdstr=${1}
   [[ ${ONSITE} -eq 0 ]] && {
-    eval "${cmdstr}"
+    sudouser_exc "${cmdstr}"
   } || {
     master_exc "${cmdstr}"
   }
@@ -38,7 +38,7 @@ function kube_exc {
 
 function kube_apply {
   [[ ${ONSITE} -eq 0 ]] && {
-    kubectl apply -f ${LOCAL_KUBEDIR}/${1}
+    sudouser_exc "kubectl apply -f ${LOCAL_KUBEDIR}/${1}"
   } || {
     master_exc "kubectl apply -f ${REMOTE_KUBECONF}/${1}"
   }
@@ -107,10 +107,9 @@ DEPLOY_MASTER
 
       [[ ${ONSITE} -eq 0 ]] && {
         local conf=${LOCAL_KUBECONF}/config
-        [[ ! -d ${LOCAL_KUBECONF} ]] && mkdir ${LOCAL_KUBECONF}
-        [[ -f ${conf} ]] && rm -fr ${conf}
-        scp ${SSH_OPTS} ${sshe}:${REMOTE_KUBECONF}/config ${LOCAL_KUBECONF}
-        chown -R $(id -u ${SUDO_USER}):$(id -g ${SUDO_USER}) ${LOCAL_KUBECONF}
+        sudouser_exc "mkdir ${LOCAL_KUBECONF}"
+        sudouser_exc "rm -fr ${conf}"
+        sudouser_exc "scp ${SSH_OPTS} ${sshe}:${REMOTE_KUBECONF}/config ${LOCAL_KUBECONF}"
       }
     fi
   done
@@ -181,17 +180,7 @@ function wait_cluster_ready {
 function deploy_objects {
   [[ -n "${cluster_states_objects[@]}" ]] && {
     for obj in "${cluster_states_objects[@]}"; do
-      [[ ${obj} =~ "istio" ]] && {
-        kube_apply istio/crds.yaml
-        sleep 5
-        # in case some objects deploy failed for the first time
-        # due to the resources referenced are not created yet
-        kube_apply istio/${obj}.yaml
-        kube_apply istio/${obj}.yaml
-        kube_exc "kubectl label namespace default istio-injection=enabled"
-      } || {
-        kube_apply ${obj}
-      }
+      kube_apply ${obj}
     done
   } || true
 }
@@ -199,7 +188,6 @@ function deploy_objects {
 function deploy_helm {
   [[ -n "${cluster_states_helm_version}" ]] && {
     ssh ${SSH_OPTS} cactus@$(get_master) bash -s -e << DEPLOY_HELM
-      sudo -i
       set -ex
 
       echo -n "Begin to install helm ..."
@@ -207,12 +195,38 @@ function deploy_helm {
       chmod +x ./get
       bash ./get -v ${cluster_states_helm_version}
 
-      exit
-      set -ex
       helm init --wait --service-account tiller
       helm repo remove stable || true
       helm version || true
 DEPLOY_HELM
-  } || true
+  }
 
+  [[ ${ONSITE} -eq 0 ]] && {
+    echo "Init local helm client,for debug local chart ..."
+    sudouser_exc "rm -fr ~/.helm"
+    sudouser_exc "helm init --client-only"
+    sudouser_exc "helm repo remove stable"
+    sudouser_exc "helm version"
+  }
+
+  echo -n "Begin to add repos ..."
+  for repo in "${cluster_states_helm_repos[@]}"; do
+    IFS='|' read -a repo_i <<< "${repo}"
+    echo -n "Add repo: ${repo_i[0]}|${repo_i[1]}"
+    master_exc "helm repo add ${repo_i[0]} ${repo_i[1]}" || true
+  done
+
+ 
+  echo -n "Begin to install charts"
+  for chart in "${cluster_states_helm_charts[@]}"; do
+    IFS='|' read -a r_i <<< "${chart}"
+    r_name=${r_i[0]}
+    r_chart=${r_i[1]}
+    r_version=${r_i[2]}
+    r_namespace=${r_i[3]}
+    echo -n "Install chart: ${r_name}|${r_chart}|${r_version}|${r_namespace}"
+    master_exc "kubectl create namespace ${r_namespace}" || true
+    master_exc "helm install --name ${r_name} --version ${r_version} --namespace ${r_namespace} ${r_chart}" || true
+  done
 }
+

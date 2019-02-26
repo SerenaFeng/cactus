@@ -100,6 +100,17 @@ function ssh_exc {
 SSH_EXE_END
 }
 
+function sudouser_exc {
+  cmdstr=${1}
+  no_error=${2:-true}
+
+  [[ ${no_error} == true ]] && {
+    /bin/su -s /bin/bash -c "${cmdstr}" ${SUDO_USER} || true
+  } || {
+    /bin/su -s /bin/bash -c "${cmdstr}" ${SUDO_USER}
+  }
+}
+
 function is_master {
   local vnode=${1}
   if [ $(eval echo "\$nodes_${vnode}_cloud_native_master") == "True" ]; then
