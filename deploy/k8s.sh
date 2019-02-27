@@ -29,8 +29,9 @@ function get_kube_join {
 
 function kube_exc {
   local cmdstr=${1}
+  local no_error=${2:-true}
   [[ ${ONSITE} -eq 0 ]] && {
-    sudouser_exc "${cmdstr}"
+    sudouser_exc "${cmdstr}" ${no_error}
   } || {
     master_exc "${cmdstr}"
   }
@@ -107,9 +108,11 @@ DEPLOY_MASTER
 
       [[ ${ONSITE} -eq 0 ]] && {
         local conf=${LOCAL_KUBECONF}/config
-        sudouser_exc "mkdir ${LOCAL_KUBECONF}"
-        sudouser_exc "rm -fr ${conf}"
-        sudouser_exc "scp ${SSH_OPTS} ${sshe}:${REMOTE_KUBECONF}/config ${LOCAL_KUBECONF}"
+        sudouser_exc "
+          mkdir ${LOCAL_KUBECONF} || true
+          rm -fr ${conf} || true
+          scp ${SSH_OPTS} ${sshe}:${REMOTE_KUBECONF}/config ${LOCAL_KUBECONF} || true
+        "
       }
     fi
   done
@@ -162,7 +165,7 @@ function wait_cluster_ready {
   set +e
   echo "Wait for cluster to be ready ....."
   for attempt in $(seq "${total_attempts}"); do
-    kube_exc "kubectl get nodes | grep -v NotReady | grep Ready"
+    kube_exc "kubectl get nodes | grep -v NotReady | grep Ready" false
     case $? in
       0) echo "${attempt}> Success"; break ;;
       *) echo "${attempt}/${total_attempts}> cluster ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
@@ -195,38 +198,45 @@ function deploy_helm {
       chmod +x ./get
       bash ./get -v ${cluster_states_helm_version}
 
-      helm init --wait --service-account tiller
+      helm init --wait --service-account tiller || true
       helm repo remove stable || true
       helm version || true
 DEPLOY_HELM
+
+    [[ ${ONSITE} -eq 0 ]] && {
+      echo "Init local helm client,for debug local chart ..."
+      sudouser_exc "
+        rm -fr ~/.helm
+        helm init --client-only 
+        helm repo remove stable
+        helm version
+      "
+    }
   }
 
-  [[ ${ONSITE} -eq 0 ]] && {
-    echo "Init local helm client,for debug local chart ..."
-    sudouser_exc "rm -fr ~/.helm"
-    sudouser_exc "helm init --client-only"
-    sudouser_exc "helm repo remove stable"
-    sudouser_exc "helm version"
-  }
-
-  echo -n "Begin to add repos ..."
-  for repo in "${cluster_states_helm_repos[@]}"; do
-    IFS='|' read -a repo_i <<< "${repo}"
-    echo -n "Add repo: ${repo_i[0]}|${repo_i[1]}"
-    master_exc "helm repo add ${repo_i[0]} ${repo_i[1]}" || true
-  done
-
+  [[ -n "${cluster_states_helm_repos[@]}" ]] && {
+    echo -n "Begin to add repos ..."
+    for repo in "${cluster_states_helm_repos[@]}"; do
+      IFS='|' read -a repo_i <<< "${repo}"
+      echo -n "Add repo: ${repo_i[0]}|${repo_i[1]}"
+      master_exc "helm repo add ${repo_i[0]} ${repo_i[1]}" || true
+    done
+  } || true
  
-  echo -n "Begin to install charts"
-  for chart in "${cluster_states_helm_charts[@]}"; do
-    IFS='|' read -a r_i <<< "${chart}"
-    r_name=${r_i[0]}
-    r_chart=${r_i[1]}
-    r_version=${r_i[2]}
-    r_namespace=${r_i[3]}
-    echo -n "Install chart: ${r_name}|${r_chart}|${r_version}|${r_namespace}"
-    master_exc "kubectl create namespace ${r_namespace}" || true
-    master_exc "helm install --name ${r_name} --version ${r_version} --namespace ${r_namespace} ${r_chart}" || true
-  done
+  [[ -n "${cluster_states_helm_charts[@]}" ]] && {
+    echo -n "Begin to install charts"
+    for chart in "${cluster_states_helm_charts[@]}"; do
+      IFS='|' read -a r_i <<< "${chart}"
+      r_chart=${r_i[0]}
+      [[ -n ${r_i[1]} ]] && r_name="--name ${r_i[1]}"
+      [[ -n ${r_i[2]} ]] && r_version="--version ${r_i[2]}"
+      [[ -n ${r_i[3]} ]] && {
+        kube_exc "kubectl create namespace ${r_i[3]}" || true
+        r_namespace="--namespace ${r_i[3]}"
+      }
+      echo -n "Install chart: ${r_i}"
+      master_exc "helm install ${r_name} ${r_version} ${r_namespace} ${r_chart}" || true
+    done
+  } || true
 }
 

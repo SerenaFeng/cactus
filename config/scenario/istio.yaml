@@ -11,12 +11,12 @@ cluster:
 #    csi:
     objects:
       - helm
-      - def
     helm:
       version: v2.12.2
-      repos:
+#      repos:
         # a list in the schema: "repo_name|url"
-        - istio|http://harbor.oz/chartrepo/istio
+#        - istio|http://harbor.oz/chartrepo/istio
       charts:
-        # a list in the schema: "release_name|chart|version|namespace"
-        - istio|istio/istio|1.0.6|istio-system
+        # a list in the schema: "chart|release_name|version|namespace"
+#        - istio/istio|istio|1.0.6|istio-system
+        - https://github.com/SerenaFeng/helm-charts/raw/master/istio-1.0.6.tgz|istio||istio-system
