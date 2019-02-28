@@ -10,9 +10,9 @@ MAKEFLAGS += --no-builtin-rules
 CONFDIR ?= ./kube-config
 OBJS := calico dashboard example flannel heapster hostpath metrics-server
 HELP := =y print this help information
-debug ?= false
+d ?= False
 s ?= istio  # scenario
-where ?= vms
+w ?= vms
 p ?= pod1 # lowercase p, pod name
 P ?= cactus # uppercase P, prefix for node name
 l ?= vms
@@ -21,21 +21,21 @@ define INSTALL_HELP
 # Deploy k8s locally or on vms.
 #
 # Args:
-#   help: $(HELP)
-#   where: local or vms
+#   h: $(HELP)
+#   w: local or vms
 #   s: scenario, defined under config/scenario, default by istio
 #   p: pod name, definded under config/labs, default by pod1
 #   P: prefix for node name, default by cactus
 #   l: cleanup level, dib=all resources, sto=all except dib image, vms=only vms and networks, default by vms
 # Example:
-#   make install where=vms
+#   make install w=vms
 #   
 endef
 .phone: install
-ifeq ($(help), y)
+ifeq ($(h), y)
 install:
 	@echo "$$INSTALL_HELP"
-else ifeq ($(where), local)
+else ifeq ($(w), local)
 install:
 	bash k8s/k8sm.sh
 else
@@ -47,13 +47,13 @@ define STOP_HELP
 # STOP k8s deployment.
 #
 # Args:
-#   help: $(HELP)
+#   h: $(HELP)
 # Example:
 #   make stop
 #
 endef
 .phone: stop
-ifeq ($(help), y)
+ifeq ($(h), y)
 stop:
 	@echo "$$STOP_HELP"
 else
@@ -65,7 +65,7 @@ define CLEAN_HELP
 # Clean k8s deployment envs.
 #
 # Args:
-#   help: $(HELP)
+#   h: $(HELP)
 #   s: scenario, defined under config/scenario, default by istio
 #   p: pod name, definded under config/labs, default by pod1
 #   l: cleanup level, dib=all resources, sto=all except dib image, vms=only vms and networks, default by vms
@@ -75,7 +75,7 @@ define CLEAN_HELP
 #
 endef
 .phone: clean
-ifeq ($(help), y)
+ifeq ($(h), y)
 clean:
 	@echo "$$CLEAN_HELP"
 else
@@ -87,7 +87,7 @@ define APPLY_HELP
 # Apply objects on k8s.
 #
 # Args:
-#   help: $(HELP)
+#   h: $(HELP)
 #   o: Object to apply, supported objects: $(OBJS)
 #
 # Example:
@@ -96,7 +96,7 @@ define APPLY_HELP
 endef
 
 .phone: apply
-ifeq ($(help), y)
+ifeq ($(h), y)
 apply:
 	@echo "$$APPLY_HELP"
 else
@@ -109,7 +109,7 @@ define REMOVE_HELP
 # Remove objects.
 #
 # Args:
-#   help: $(HELP)
+#   h: $(HELP)
 #   o: Object to delete, supported objects: $(OBJS)
 #   
 # Example:
@@ -117,7 +117,7 @@ define REMOVE_HELP
 #   
 endef
 .phone: delete
-ifeq ($(help), y)
+ifeq ($(h), y)
 delete:
 	@echo "$$REMOVE_HELP"
 else

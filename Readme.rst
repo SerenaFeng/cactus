@@ -28,11 +28,13 @@ Deployment
 
   .. code-block:: bash
 
-  make install debug=<true|false> where=<vms|local> p=<pod-name> s=<scenario-name> P=<prefix>
+  make install d=<true|false> w=<vms|local> p=<pod-name> s=<scenario-name> P=<prefix> l=<cleanup_level>
 
-- *debug*: whether to track bash execution commands or not
-- *where*: where to deploy the Kubernetes, only vms is supported
+- *w*: the way to deploy the Kubernetes, only vms is supported
 - *p*: pod name, defined under config/labs, substitute "xxx" in idf-xxx.yaml & pdf-xxx.yaml
 - *s*: scenario name, defined under config/scenario, substitute "scenario" in scenario.yaml
 - *P*: prefix of node name, joint node name with "_"
+- *l*: cleanup(reinstall) level, vms/sto/dib, vms means cleanup vms and networks before deploy k8s cluster; level sto besides what vms level does, also removes disk images; while dib will cleanup all the resources include dib image, it is a wholy new fresh installation. default by vms
+- *d*: whether to track bash execution commands or not, True/False, Default by False
+- *h*: print help information
 
