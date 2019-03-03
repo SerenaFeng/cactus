@@ -14,9 +14,9 @@ function diskdir {
 
 function __get_bridges {
   set +x
-  compgen -v |
+  compgen -v ${BRIDGE_IDENTITY} |
   while read var; do {
-    [[ ${var} =~ ${BRIDGE_IDENTITY} ]] && echo ${var#${BRIDGE_IDENTITY}}
+    echo ${var#${BRIDGE_IDENTITY}}
   }
   done || true
   [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
