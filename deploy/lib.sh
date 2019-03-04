@@ -111,6 +111,14 @@ function sudouser_exc {
   }
 }
 
+function get_role {
+  local vnode=${1}
+  local role="minion"
+  name=nodes_${vnode}_cloud_native_master
+  [[ ${!name} == "True" ]] && role="master"
+  echo ${role}
+}
+
 function is_master {
   local vnode=${1}
   if [ $(eval echo "\$nodes_${vnode}_cloud_native_master") == "True" ]; then

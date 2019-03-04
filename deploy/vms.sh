@@ -14,9 +14,9 @@ function diskdir {
 
 function __get_bridges {
   set +x
-  compgen -v |
+  compgen -v ${BRIDGE_IDENTITY} |
   while read var; do {
-    [[ ${var} =~ ${BRIDGE_IDENTITY} ]] && echo ${var#${BRIDGE_IDENTITY}}
+    echo ${var#${BRIDGE_IDENTITY}}
   }
   done || true
   [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
@@ -86,13 +86,9 @@ function prepare_vms {
   # Create vnode images and resize OS disk image for each foundation node VM
   for vnode in "${vnodes[@]}"; do
     if [ $(eval echo "\$nodes_${vnode}_enabled") == "True" ]; then
-      if is_master ${vnode}; then
-        echo "preparing for master vnode [${vnode}]"
-        image="master.qcow2"
-      else
-        echo "preparing for minion vnode [${vnode}]"
-        image="minion.qcow2"
-      fi
+      role=$(get_role $vnode)
+      echo "preparing for $role vnode: [${vnode}]"
+      image="${role}.qcow2"
       cp "$(imagedir)/${image}" "$(diskdir)/${vnode}.qcow2"
       disk_capacity="nodes_${vnode}_node_disk"
       qemu-img resize "$(diskdir)/${vnode}.qcow2" ${!disk_capacity}
