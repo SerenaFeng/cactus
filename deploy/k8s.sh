@@ -188,6 +188,23 @@ function deploy_objects {
   } || true
 }
 
+function wait_istio_init_ok {
+  local total_attempts=30
+  local sleep_time=1
+
+  set +e
+  echo "Wait for cluster to be ready ....."
+  for attempt in $(seq "${total_attempts}"); do
+    kube_exc "kubectl get crds | grep 'istio.io\|certmanager.k8s.io' | wc -l | grep 53" false
+    case $? in
+      0) echo "${attempt}> Istio init finish"; break ;;
+      *) echo "${attempt}/${total_attempts}> Istio init ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
+    esac
+    sleep ${sleep_time}
+  done
+  set -e
+}
+
 function deploy_helm {
   [[ -n "${cluster_states_helm_version}" ]] && {
     ssh ${SSH_OPTS} cactus@$(get_master) bash -s -e << DEPLOY_HELM
@@ -236,6 +253,7 @@ DEPLOY_HELM
       }
       echo -n "Install chart: ${r_i}"
       master_exc "helm install ${r_name} ${r_version} ${r_namespace} ${r_chart}" || true
+      [[ ${r_i[1]} =~ istio-init ]] && wait_istio_init_ok
     done
   } || true
 }

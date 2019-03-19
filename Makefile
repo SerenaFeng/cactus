@@ -40,7 +40,7 @@ install:
 	bash k8s/k8sm.sh
 else
 install:
-	sudo CI_DEBUG=$(debug) bash deploy/deploy.sh -s $(s) -p $(p) -P $(P) -l $(l)
+	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s $(s) -p $(p) -P $(P) -l $(l)
 endif
 
 define STOP_HELP
