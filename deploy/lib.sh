@@ -18,15 +18,14 @@ function generate_ssh_key {
   fi
 
   if [ -f "${SSH_KEY}" ]; then
-    cp "${SSH_KEY}" ${USER_SSH_KEY}
-    ssh-keygen -f "${USER_SSH_KEY}" -y > "${USER_SSH_KEY}.pub"
+    ssh-keygen -f ${SSH_KEY} -y > ${SSH_KEY}.pub
   fi
 
-  [ -f "${USER_SSH_KEY}" ] || ssh-keygen -f "${USER_SSH_KEY}" -N ''
+  [ -f "${SSH_KEY}" ] || ssh-keygen -f ${SSH_KEY} -N ''
   
-  [ -f "${SSH_KEY}" ] || {
-    sudo install -D -o "${user}" -m 0600 "${USER_SSH_KEY}" "${SSH_KEY}"
-    sudo install -D -o "${user}" -m 0600 "${USER_SSH_KEY}.pub" "${SSH_KEY}.pub"
+  [ -f "${USER_SSH_KEY}" ] || {
+    install -D -o "${user}" -m 0600 "${SSH_KEY}" "${USER_SSH_KEY}"
+    install -D -o "${user}" -m 0600 "${SSH_KEY}.pub" "${USER_SSH_KEY}.pub"
   }
 }
 

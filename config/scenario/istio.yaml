@@ -2,7 +2,7 @@
 cluster:
   domain: cactus.k8s
   version: v1.13.2
-  pod_cidr: 10.244.0.0/16
+  pod_cidr: 10.44.0.0/16
   enable_admission: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
 # service_cidr: 192.168.11.0/24
   states:
