@@ -26,8 +26,8 @@ nodes:
       master: true
     node: &nodeparams
       cpus: 4
-      memory: 6144
-      disk: 20G
+      memory: 10240
+      disk: 40G
   - name: minion01
     enabled: True
     node_id: 3
@@ -37,4 +37,24 @@ nodes:
       master: false
     labels:
       purpose: mostuse
+    node: *nodeparams
+  - name: minion02
+    enabled: True
+    node_id: 4
+    hostname: minion02
+    cloud_native:
+      enabled: true
+      master: false
+    labels:
+      purpose: mostuse
+    node: *nodeparams
+  - name: minion03
+    enabled: True
+    node_id: 5
+    hostname: minion03
+    cloud_native:
+      enabled: true
+      master: false
+    labels:
+      purpose: special
     node: *nodeparams
