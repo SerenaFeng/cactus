@@ -6,3 +6,4 @@ eval_pdf.sh
 *.swp
 net_cactus_*.xml
 kubeadm.conf
+*.log

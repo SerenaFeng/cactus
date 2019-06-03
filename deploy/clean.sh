@@ -85,6 +85,8 @@ fi
 # Infra setup
 parse_idf
 
+update_bridges
+
 parse_pdf
 
 parse_scenario

@@ -22,9 +22,15 @@ function __get_bridges {
   [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
 }
 
-function prepare_networks {
+function update_bridges {
   read -r -a BR_NAMES <<< $(__get_bridges)
+  for br in "${BR_NAMES[@]}"; do
+    old=$(eval echo "\$${BRIDGE_IDENTITY}${br}")
+    eval "${BRIDGE_IDENTITY}${br}=${PREFIX}_${old}"
+  done
+}
 
+function prepare_networks {
   [[ ! "${BR_NAMES[@]}" =~ "admin" ]] && {
     notify_n "[ERR] Bridge admin must be defined\n" 2
     exit 1
@@ -97,8 +103,6 @@ function prepare_vms {
 }
 
 function cleanup_networks {
-  read -r -a BR_NAMES <<< $(__get_bridges)
-
   for br in "${BR_NAMES[@]}"; do
     net=$(eval echo "\$${BRIDGE_IDENTITY}${br}")
     if virsh net-info "${net}" >/dev/null 2>&1; then

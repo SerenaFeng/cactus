@@ -6,9 +6,9 @@ idf:
   cactus:
     jumphost:
       bridges:
-        admin: cactus_admin
-        mgmt: cactus_mgmt
-        public: cactus_public
+        admin: admin
+        mgmt: mgmt
+        public: public
       fixed_ips:
         admin: 192.168.7.1
         mgmt: 10.7.11.1
