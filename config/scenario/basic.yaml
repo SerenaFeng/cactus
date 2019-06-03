@@ -1,6 +1,6 @@
 ---
 cluster:
-  domain: new.k8s
+  domain: cactus.k8s
   version: v1.13.6
   enable_admission: NodeRestriction
   pod_cidr: 10.244.0.0/16
