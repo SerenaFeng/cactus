@@ -16,8 +16,3 @@ cluster:
 #      repos:
         # a list in the schema: "repo_name|url"
 #        - istio|http://harbor.oz/chartrepo/istio
-      charts:
-        # a list in the schema: "chart|release_name|version|namespace"
-#        - istio/istio|istio|1.0.6|istio-system
-        - https://github.com/SerenaFeng/helm-charts/raw/master/istio-init-1.1.0.tgz|istio-init||istio-system
-        - https://github.com/SerenaFeng/helm-charts/raw/master/istio-1.1.0.tgz|istio||istio-system

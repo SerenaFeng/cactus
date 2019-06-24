@@ -189,7 +189,7 @@ function deploy_objects {
 }
 
 function wait_istio_init_ok {
-  local total_attempts=30
+  local total_attempts=120
   local sleep_time=1
 
   set +e
