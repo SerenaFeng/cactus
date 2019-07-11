@@ -40,6 +40,8 @@ install:
 	bash k8s/k8sm.sh
 else
 install:
+	bash ./deps/k8son.sh
+	@echo "$$P" > ./deps/k8s.lock
 	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s $(s) -p $(p) -P $(P) -l $(l)
 endif
 

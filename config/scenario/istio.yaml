@@ -1,6 +1,6 @@
 ---
 cluster:
-  domain: cactus.k8s
+  domain: istio.k8s
   version: v1.13.6
   pod_cidr: 10.44.0.0/16
   enable_admission: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
@@ -13,11 +13,19 @@ cluster:
       - helm
     helm:
       version: v2.12.2
-#      repos:
-        # a list in the schema: "repo_name|url"
-#        - istio|http://harbor.oz/chartrepo/istio
+      repos:
+        # flag is utilized to handle when name is not compatible with bash variable,
+        # such as istio-init can not be used as the bash variable name
+        - flag: istio
+          name: istio
+          url: http://harbor.oz/chartrepo/istio
       charts:
-        # a list in the schema: "chart|release_name|version|namespace"
-#        - istio/istio|istio|1.0.6|istio-system
-        - https://github.com/SerenaFeng/helm-charts/raw/master/istio-init-1.1.0.tgz|istio-init||istio-system
-        - https://github.com/SerenaFeng/helm-charts/raw/master/istio-1.1.0.tgz|istio||istio-system
+        - flag: istio_init
+          name: istio-init
+          url: https://github.com/SerenaFeng/helm-charts/raw/master/istio-init-1.1.0.tgz
+          namespace: istio-system
+        - flag: istio
+          name: istio
+          url: https://github.com/SerenaFeng/helm-charts/raw/master/istio-1.1.0.tgz
+          namespace: istio-system
+          args: "--set___kiali.enabled=true,tracing.enabled=true,grafana.enabled=true"

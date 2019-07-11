@@ -234,26 +234,35 @@ DEPLOY_HELM
   [[ -n "${cluster_states_helm_repos[@]}" ]] && {
     echo -n "Begin to add repos ..."
     for repo in "${cluster_states_helm_repos[@]}"; do
-      IFS='|' read -a repo_i <<< "${repo}"
-      echo -n "Add repo: ${repo_i[0]}|${repo_i[1]}"
-      master_exc "helm repo add ${repo_i[0]} ${repo_i[1]}" || true
+      name=$(eval echo "\$cluster_states_helm_repos_${repo}_name")
+      url=$(eval echo "\$cluster_states_helm_repos_${repo}_url")
+
+      echo -n "Add repo: ${name}: ${url}"
+      master_exc "helm repo add ${name} ${url}" || true
     done
   } || true
  
   [[ -n "${cluster_states_helm_charts[@]}" ]] && {
     echo -n "Begin to install charts"
     for chart in "${cluster_states_helm_charts[@]}"; do
-      IFS='|' read -a r_i <<< "${chart}"
-      r_chart=${r_i[0]}
-      [[ -n ${r_i[1]} ]] && r_name="--name ${r_i[1]}"
-      [[ -n ${r_i[2]} ]] && r_version="--version ${r_i[2]}"
-      [[ -n ${r_i[3]} ]] && {
-        kube_exc "kubectl create namespace ${r_i[3]}" || true
-        r_namespace="--namespace ${r_i[3]}"
+      name=$(eval echo "\$cluster_states_helm_charts_${chart}_name")
+      version=$(eval echo "\$cluster_states_helm_charts_${chart}_version")
+      namespace=$(eval echo "\$cluster_states_helm_charts_${chart}_namespace")
+      r_chart=$(eval echo "\$cluster_states_helm_charts_${chart}_url")
+      args=$(eval echo "\$cluster_states_helm_charts_${chart}_args")
+      [[ -n ${name} ]] && r_name="--name ${name}"
+      [[ -n ${version} ]] && r_version="--version ${version}"
+      [[ -n ${namespace} ]] && {
+        kube_exc "kubectl create namespace ${namespace}" || true
+        r_namespace="--namespace ${namespace}"
       }
-      echo -n "Install chart: ${r_i}"
-      master_exc "helm install ${r_name} ${r_version} ${r_namespace} ${r_chart}" || true
-      [[ ${r_i[1]} =~ istio-init ]] && wait_istio_init_ok
+      [[ -n ${args} ]] && {
+        r_args=$(echo "${args//___/ }")
+      }
+
+      echo -n "Install chart: ${r_name} ${r_version} ${r_namespace} ${r_args} ${r_chart}"
+      master_exc "helm install ${r_name} ${r_version} ${r_namespace} ${r_args} ${r_chart}" || true
+      [[ ${name} =~ istio-init ]] && wait_istio_init_ok
     done
   } || true
 }

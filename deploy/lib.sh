@@ -51,7 +51,9 @@ function parse_pdf {
 function parse_scenario {
   scenario="${CONF_DIR}/scenario/${SCENARIO}.yaml"
   [[ -f ${scenario} ]] && {
-    eval $(parse_yaml ${scenario})
+    eval $(python ${DEPLOY_DIR}/parse_scenario.py -y ${scenario} 2>&1)
+    IFS=':' read -a cluster_states_helm_charts <<< "${charts}"
+    IFS=':' read -a cluster_states_helm_repos <<< "${repos}"
   } || {
     echo "${scenario} must exist"
     exit 5
