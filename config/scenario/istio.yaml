@@ -1,6 +1,6 @@
 ---
 cluster:
-  name: isti
+  name: istio
   domain: istio.k8s
   version: v1.13.6
   pod_cidr: 10.44.0.0/16
