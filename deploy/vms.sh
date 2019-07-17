@@ -211,10 +211,14 @@ function check_connection {
 function cleanup_dib {
   docker ps -a | grep ${dib_name} | awk '{print $1}' | xargs -I {} docker rm -f {} &>/dev/null
   docker rmi ${builder_image} || true
+  rm -fr $(imagedir) || true
 }
 
 function cleanup_sto {
-  rm -fr $(imagedir) || true
   rm -fr $(diskdir) || true
 }
 
+function cleanup_img {
+  rm -fr $(imagedir) || true
+  rm -fr $(diskdir) || true
+}

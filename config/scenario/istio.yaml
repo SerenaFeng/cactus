@@ -1,5 +1,6 @@
 ---
 cluster:
+  name: isti
   domain: istio.k8s
   version: v1.13.6
   pod_cidr: 10.44.0.0/16
@@ -28,4 +29,7 @@ cluster:
           name: istio
           url: https://github.com/SerenaFeng/helm-charts/raw/master/istio-1.1.0.tgz
           namespace: istio-system
+          # ___ will be substituted with space to make it a practical --set flag for helm install
+          # other flags can be addressed similarly, such as
+          # --home___/home/user/.helm___--wait
           args: "--set___kiali.enabled=true,tracing.enabled=true,grafana.enabled=true"

@@ -11,5 +11,5 @@ idf:
         public: public
       fixed_ips:
         admin: 192.168.7.1
-        mgmt: 10.7.11.1
-        public: 172.7.11.1
+        mgmt: 10.0.7.1
+        public: 172.0.7.1

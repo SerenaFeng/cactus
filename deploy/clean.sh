@@ -22,7 +22,9 @@ $(notify_i "Input parameters to the build script are:" 2)
    has to be defined in config directory (e.g. calico-noha).
 -p POD name as defined in the configuration directory, e.g. pod2
 -P Prefix of vm name, e.g. if prefix=cactus, vm name will be cactus_<node name>
--l cleanup level dib=all resources, sto=all resources except dib image
+-l cleanup level dib=all resources(vm, network, dib image, k8s images,,,etc), 
+   sto=all resources except dib image and k8s images, used by default,
+   img=all resources except dib image.
 -h Print this help information
 
 $(notify_i "[NOTE] sudo & virsh priviledges are needed for this script to run" 3)
@@ -97,5 +99,6 @@ cleanup_networks
 
 cleanup_sto
 
+[[ ${LEVEL} == img ]] && cleanup_img
 [[ ${LEVEL} == dib ]] && cleanup_dib
 
