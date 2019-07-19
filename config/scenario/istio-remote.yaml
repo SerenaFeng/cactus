@@ -1,11 +1,11 @@
 ---
 cluster:
-  name: istio
-  domain: istio.k8s
+  name: istio2
+  domain: istio2.k8s
   version: v1.13.6
-  pod_cidr: 10.244.32.0/20
+  pod_cidr: 10.244.96.0/20
   enable_admission: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
-  service_cidr: 192.168.32.0/20
+  service_cidr: 192.168.96.0/20
   states:
     cni: calico
     cri: docker
@@ -19,11 +19,11 @@ cluster:
           name: istio-init
           url: https://github.com/SerenaFeng/helm-charts/raw/master/istio/istio-init-1.1.0.tgz
           namespace: istio-system
-        - flag: istio
-          name: istio
+        - flag: istio_remote
+          name: istio-remote
           url: https://github.com/SerenaFeng/helm-charts/raw/master/istio/istio-1.1.0.tgz
           namespace: istio-system
           # ___ will be substituted with space to make it a practical --set flag for helm install
           # other flags can be addressed similarly, such as
           # --home___/home/user/.helm___--wait
-          # args: "--set___kiali.enabled=true,tracing.enabled=true,grafana.enabled=true"
+          args: "--values___https://github.com/SerenaFeng/helm-charts/raw/master/istio/values-istio-remote-1.1.0.yaml"

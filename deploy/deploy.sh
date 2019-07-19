@@ -48,6 +48,7 @@ export TERM=xterm
 CI_DEBUG=${CI_DEBUG:-0}; [[ "${CI_DEBUG}" =~ (false|0) ]] || set -x
 REPO_ROOT_PATH=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")/..")
 DEPLOY_DIR=$(cd "${REPO_ROOT_PATH}/deploy"; pwd)
+TEMPLATE_DIR=${DEPLOY_DIR}/templates
 CONF_DIR="${REPO_ROOT_PATH}/config"
 STORAGE_DIR=/var/cactus
 PREFIX=cactus

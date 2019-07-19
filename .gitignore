@@ -7,4 +7,4 @@ eval_pdf.sh
 net_cactus_*.xml
 kubeadm.conf
 *.log
-deps/k8s.lock
+kube-config/calico/calico.yaml

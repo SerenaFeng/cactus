@@ -42,7 +42,7 @@ function prepare_networks {
   }
 
   # Expand network templates
-  for tp in "${DEPLOY_DIR}/"*.template; do
+  for tp in "${TEMPLATE_DIR}/"*.template; do
     eval "cat <<-EOF
       $(<"${tp}")
 EOF" 2> /dev/null > "${TMP_DIR}/$(basename ${tp%.template})"
@@ -72,10 +72,10 @@ function build_images {
 
 function cleanup_vms {
   # clean up existing nodes
-  for node in $(virsh list --name | grep -P "${PREFIX}"); do
+  for node in $(virsh list --name | grep -P "${PREFIX}_"); do
     virsh destroy "${node}"
   done
-  for node in $(virsh list --name --all | grep -P "${PREFIX}"); do
+  for node in $(virsh list --name --all | grep -P "${PREFIX}_"); do
     virsh domblklist "${node}" | awk '/^.da/ {print $2}' | \
       xargs --no-run-if-empty -I{} sudo rm -f {}
     # TODO command 'undefine' doesn't support option --nvram

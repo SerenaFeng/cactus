@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
 REMOTE_KUBECONF=/home/cactus/.kube
-LOCAL_KUBECONF=$HOME/.kube
+LOCAL_KUBECONF=$HOME/.kube.${PREFIX}
 LOCAL_KUBEDIR="${REPO_ROOT_PATH}/kube-config"
-helm=$(which helm)
+REMOTE_KUBEDIR=/home/cactus/kube-config
+LOCAL_HELMCONF=/home/.helm.${PREFIX}
+HELM=$(which helm) --home ${LOCAL_HELMCONF}
 
 function parse_labels {
   set +x
@@ -31,7 +33,7 @@ function kube_exc {
   local cmdstr=${1}
   local no_error=${2:-true}
   [[ ${ONSITE} -eq 0 ]] && {
-    sudouser_exc "${cmdstr}" ${no_error}
+    sudouser_exc "kubectl --kubeconfig ${LOCAL_KUBECONF}/config ${cmdstr}" ${no_error}
   } || {
     master_exc "${cmdstr}"
   }
@@ -39,9 +41,9 @@ function kube_exc {
 
 function kube_apply {
   [[ ${ONSITE} -eq 0 ]] && {
-    sudouser_exc "kubectl apply -f ${LOCAL_KUBEDIR}/${1}"
+    sudouser_exc "kubectl --kubeconfig ${LOCAL_KUBECONF}/config apply -f ${LOCAL_KUBEDIR}/${1}"
   } || {
-    master_exc "kubectl apply -f ${REMOTE_KUBECONF}/${1}"
+    master_exc "kubectl apply -f ${REMOTE_KUBEDIR}/${1}"
   }
 }
 
@@ -51,10 +53,17 @@ function render_service_cidr {
    }
 }
 
+function render_cni_cidr {
+  template=${LOCAL_KUBEDIR}/${1}/${1}.yaml.template
+  eval "cat <<-EOF
+$(<"${template}")
+EOF" 2> /dev/null > ${LOCAL_KUBEDIR}/${1}/${1}.yaml
+}
+
 function compose_kubeadm_config {
-  template=${DEPLOY_DIR}/templates/kubeadm-${cluster_version%.*}.template
+  template=${TEMPLATE_DIR}/kubeadm-${cluster_version%.*}.template
   vnode=${1}
-  [[ -n ${cluster_pod_cidr} ]] && cluster_pod_cidr="10.244.0.0/16"
+  [[ -n ${cluster_pod_cidr} ]] || cluster_pod_cidr="10.244.0.0/16"
 
   eval "cat <<-EOF
 $(<"${template}")
@@ -107,10 +116,9 @@ function deploy_master {
 DEPLOY_MASTER
 
       [[ ${ONSITE} -eq 0 ]] && {
-        local conf=${LOCAL_KUBECONF}/config
         sudouser_exc "
+          rm -fr ${LOCAL_KUBECONF} || true
           mkdir ${LOCAL_KUBECONF} || true
-          rm -fr ${conf} || true
           scp ${SSH_OPTS} ${sshe}:${REMOTE_KUBECONF}/config ${LOCAL_KUBECONF} || true
         "
       }
@@ -155,6 +163,8 @@ function deploy_cni {
     cluster_states_cni=calico
   fi
 
+  render_cni_cidr ${cluster_states_cni}
+
   kube_apply ${cluster_states_cni}
 }
 
@@ -165,7 +175,7 @@ function wait_cluster_ready {
   set +e
   echo "Wait for cluster to be ready ....."
   for attempt in $(seq "${total_attempts}"); do
-    kube_exc "kubectl get nodes | grep -v NotReady | grep Ready" false
+    kube_exc "get nodes | grep -v NotReady | grep Ready" false
     case $? in
       0) echo "${attempt}> Success"; break ;;
       *) echo "${attempt}/${total_attempts}> cluster ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
@@ -176,7 +186,7 @@ function wait_cluster_ready {
 
   for vnode in "${vnodes[@]}"; do
     read -r -a labels <<< $(parse_labels ${vnode})
-    [[ -n "${labels[@]}" ]] && kube_exc "kubectl label node ${vnode} ${labels[@]}"
+    [[ -n "${labels[@]}" ]] && kube_exc "label node ${vnode} ${labels[@]}"
   done
 }
 
@@ -195,7 +205,7 @@ function wait_istio_init_ok {
   set +e
   echo "Wait for cluster to be ready ....."
   for attempt in $(seq "${total_attempts}"); do
-    kube_exc "kubectl get crds | grep 'istio.io\|certmanager.k8s.io' | wc -l | grep 53" false
+    kube_exc "get crds | grep 'istio.io\|certmanager.k8s.io' | wc -l | grep 53" false
     case $? in
       0) echo "${attempt}> Istio init finish"; break ;;
       *) echo "${attempt}/${total_attempts}> Istio init ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
@@ -223,10 +233,11 @@ DEPLOY_HELM
     [[ ${ONSITE} -eq 0 ]] && {
       echo "Init local helm client,for debug local chart ..."
       sudouser_exc "
-        rm -fr ~/.helm
-        helm init --client-only 
-        helm repo remove stable
-        helm version
+        KUBECONFIG=${LOCAL_KUBECONF}
+        rm -fr ${LOCAL_HELMCONF}
+        ${HELM} init --client-only
+        ${HELM} repo remove stable
+        ${HELM} version
       "
     }
   }
@@ -253,7 +264,7 @@ DEPLOY_HELM
       [[ -n ${name} ]] && r_name="--name ${name}"
       [[ -n ${version} ]] && r_version="--version ${version}"
       [[ -n ${namespace} ]] && {
-        kube_exc "kubectl create namespace ${namespace}" || true
+        kube_exc "create namespace ${namespace}" || true
         r_namespace="--namespace ${namespace}"
       }
       [[ -n ${args} ]] && {
