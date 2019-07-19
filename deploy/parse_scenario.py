@@ -21,6 +21,12 @@ def joint_item(prefix, left):
         if 'flag' in left:
             prefix = _join_prefix(left.get('flag'))
         for k, v in left.iteritems():
+            if k == 'args':
+                args=""
+                for arg in v:
+                    for ak, av in arg.iteritems():
+                        args='___'.join([args, ak, av])
+                v=args
             joint_item(_join_prefix(k) if prefix else k, v)
     elif isinstance(left, list):
         for i_left in left:

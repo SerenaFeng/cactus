@@ -8,3 +8,4 @@ net_cactus_*.xml
 kubeadm.conf
 *.log
 kube-config/calico/calico.yaml
+config/scenario/istio-remote.yaml

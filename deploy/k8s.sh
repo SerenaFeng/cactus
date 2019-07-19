@@ -5,7 +5,7 @@ LOCAL_KUBECONF=$HOME/.kube.${PREFIX}
 LOCAL_KUBEDIR="${REPO_ROOT_PATH}/kube-config"
 REMOTE_KUBEDIR=/home/cactus/kube-config
 LOCAL_HELMCONF=/home/.helm.${PREFIX}
-HELM=$(which helm) --home ${LOCAL_HELMCONF}
+HELM="$(which helm) --home ${LOCAL_HELMCONF}"
 
 function parse_labels {
   set +x
