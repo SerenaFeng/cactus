@@ -17,13 +17,11 @@ cluster:
       charts:
         - flag: istio_init
           name: istio-init
-          url: https://github.com/SerenaFeng/helm-charts/raw/master/istio/istio-init-1.1.0.tgz
+          url: https://github.com/SerenaFeng/helm-charts/raw/master/istio/istio-init-1.2.2.tgz
           namespace: istio-system
         - flag: istio
           name: istio
-          url: https://github.com/SerenaFeng/helm-charts/raw/master/istio/istio-1.1.0.tgz
+          url: https://github.com/SerenaFeng/helm-charts/raw/master/istio/istio-1.2.2.tgz
           namespace: istio-system
-          # ___ will be substituted with space to make it a practical --set flag for helm install
-          # other flags can be addressed similarly, such as
-          # --home___/home/user/.helm___--wait
-          # args: "--set___kiali.enabled=true,tracing.enabled=true,grafana.enabled=true"
+          args:
+            - --values: https://github.com/SerenaFeng/helm-charts/raw/master/istio/values-istio-1.2.2.yaml
