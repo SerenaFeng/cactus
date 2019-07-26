@@ -3,9 +3,9 @@ cluster:
   name: istio
   domain: istio.k8s
   version: v1.13.6
-  pod_cidr: 10.244.32.0/20
+#  pod_cidr: 10.244.32.0/20
   enable_admission: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
-  service_cidr: 192.168.32.0/20
+#  service_cidr: 192.168.32.0/20
   states:
     cni: calico
     cri: docker
