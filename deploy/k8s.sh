@@ -117,9 +117,11 @@ DEPLOY_MASTER
 
       [[ ${ONSITE} -eq 0 ]] && {
         sudouser_exc "
+          rm -fr ${HOME}/.kube || true
           rm -fr ${LOCAL_KUBECONF} || true
           mkdir ${LOCAL_KUBECONF} || true
           scp ${SSH_OPTS} ${sshe}:${REMOTE_KUBECONF}/config ${LOCAL_KUBECONF} || true
+          ln -s ${LOCAL_KUBECONF} ${HOME}/.kube || true
         "
       }
     fi

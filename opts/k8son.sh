@@ -12,6 +12,12 @@ onto=${1}
 
 rm -fr ~/.kube || true
 rm -fr ~/.helm || true
+
+[[ -d ~/.kube.${onto} ]] || {
+  echo "cluster ${onto} not exist"
+  exit 1
+}
+
 ln -s ~/.kube.${onto} ~/.kube
-ln -s ~/.helm.${onto} ~/.helm
+[[ -d ~/.helm.${onto} ]] && ln -s ~/.helm.${onto} ~/.helm
 
