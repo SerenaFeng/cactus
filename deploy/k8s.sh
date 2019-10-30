@@ -54,10 +54,10 @@ function render_service_cidr {
 }
 
 function render_cni_cidr {
-  template=${LOCAL_KUBEDIR}/${1}/${1}.yaml.template
+  template=${LOCAL_KUBEDIR}/${1}.yaml.template
   eval "cat <<-EOF
 $(<"${template}")
-EOF" 2> /dev/null > ${LOCAL_KUBEDIR}/${1}/${1}.yaml
+EOF" 2> /dev/null > ${LOCAL_KUBEDIR}/${1}.yaml
 }
 
 function compose_kubeadm_config {
@@ -162,12 +162,12 @@ function deploy_cni {
   echo "Apply CNI ..."
 
   if [[ -z ${cluster_states_cni} ]] || [[ "${cluster_states_cni}" == 'None' ]]; then
-    cluster_states_cni=calico
+    cluster_states_cni=calico/v3.1.3
   fi
 
   render_cni_cidr ${cluster_states_cni}
 
-  kube_apply ${cluster_states_cni}
+  kube_apply ${cluster_states_cni}.yaml
 }
 
 function wait_cluster_ready {
