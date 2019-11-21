@@ -32,19 +32,23 @@ function get_kube_join {
 function kube_exc {
   local cmdstr=${1}
   local no_error=${2:-true}
-  [[ ${ONSITE} -eq 0 ]] && {
+  if [[ ${ONSITE} -eq 0 ]]; then
     sudouser_exc "kubectl --kubeconfig ${LOCAL_KUBECONF}/config ${cmdstr}" ${no_error}
-  } || {
+    return $?
+  else
     master_exc "${cmdstr}"
-  }
+    return $?
+  fi
 }
 
 function kube_apply {
-  [[ ${ONSITE} -eq 0 ]] && {
+  if [[ ${ONSITE} -eq 0 ]]; then
     sudouser_exc "kubectl --kubeconfig ${LOCAL_KUBECONF}/config apply -f ${LOCAL_KUBEDIR}/${1}"
-  } || {
+    return $?
+  else
     master_exc "kubectl apply -f ${REMOTE_KUBEDIR}/${1}"
-  }
+    return $?
+  fi
 }
 
 function render_service_cidr {
@@ -218,8 +222,8 @@ function wait_istio_init_ok {
 }
 
 function deploy_helm {
-  [[ -n "${cluster_states_helm_version}" ]] && {
-    ssh ${SSH_OPTS} cactus@$(get_master) bash -s -e << DEPLOY_HELM
+  if [[ ${cluster_states_helm_version} =~ ^v2 ]]; then
+    ssh ${SSH_OPTS} cactus@$(get_master) bash -s -e << DEPLOY_HELMV2
       set -ex
 
       echo -n "Begin to install helm ..."
@@ -230,7 +234,7 @@ function deploy_helm {
       helm init --wait --service-account tiller || true
       helm repo remove stable || true
       helm version || true
-DEPLOY_HELM
+DEPLOY_HELMV2
 
     [[ ${ONSITE} -eq 0 ]] && {
       echo "Init local helm client,for debug local chart ..."
@@ -242,7 +246,21 @@ DEPLOY_HELM
         ${HELM} version
       "
     }
-  }
+  elif [[ ${cluster_states_helm_version} =~ ^http ]]; then
+    ssh ${SSH_OPTS} cactus@$(get_master) bash -s -e << DEPLOY_HELMV3
+      set -ex
+
+      echo -n "Begin to install helm ..."
+      wget ${cluster_states_helm_version}
+      mkdir ./helm-tar
+      tar -zxf ${cluster_states_helm_version} --directory ./helm-tar
+      install ./helm-tar/$(ls ./helm-tar)/helm /usr/local/bin
+DEPLOY_HELMV3
+
+  elif [[ -n ${cluster_states_helm_version} ]]; then
+    echo "Unsupport helm version: ${cluster_states_helm_version}"
+    return 1
+  fi
 
   [[ -n "${cluster_states_helm_repos[@]}" ]] && {
     echo -n "Begin to add repos ..."

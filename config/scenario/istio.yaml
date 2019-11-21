@@ -13,7 +13,7 @@ cluster:
     objects:
       - helm
     helm:
-      version: v2.14.2
+      version: https://get.helm.sh/helm-v3.0.0-rc.3-linux-amd64.tar.gz
       charts:
         - flag: istio_init
           name: istio-init
