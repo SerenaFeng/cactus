@@ -43,10 +43,10 @@ function kube_exc {
 
 function kube_apply {
   if [[ ${ONSITE} -eq 0 ]]; then
-    sudouser_exc "kubectl --kubeconfig ${LOCAL_KUBECONF}/config apply -f ${LOCAL_KUBEDIR}/${1}"
+    sudouser_exc "kubectl --kubeconfig ${LOCAL_KUBECONF}/config apply -f ${LOCAL_KUBEDIR}/${@}"
     return $?
   else
-    master_exc "kubectl apply -f ${REMOTE_KUBEDIR}/${1}"
+    master_exc "kubectl apply -f ${REMOTE_KUBEDIR}/${@}"
     return $?
   fi
 }
@@ -171,7 +171,7 @@ function deploy_cni {
 
   render_cni_cidr ${cluster_states_cni}
 
-  kube_apply ${cluster_states_cni}.yaml
+  kube_apply ${cluster_states_cni}.yaml --validate=false
 }
 
 function wait_cluster_ready {
