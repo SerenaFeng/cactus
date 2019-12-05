@@ -103,12 +103,9 @@ function prepare_vms {
 }
 
 function cleanup_networks {
-  for br in "${BR_NAMES[@]}"; do
-    net=$(eval echo "\$${BRIDGE_IDENTITY}${br}")
-    if virsh net-info "${net}" >/dev/null 2>&1; then
-      virsh net-destroy "${net}" || true
-      virsh net-undefine "${net}"
-    fi
+  for net in $(virsh net-list --name | grep "${PREFIX}_"); do
+    virsh net-destroy "${net}" || true
+    virsh net-undefine "${net}"
   done
 }
 

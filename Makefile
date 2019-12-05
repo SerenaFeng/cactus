@@ -66,12 +66,10 @@ define CLEAN_HELP
 #
 # Args:
 #   h: $(HELP)
-#   s: scenario, defined under config/scenario, default by istio
-#   p: pod name, definded under config/labs, default by pod1
 #   l: cleanup level, dib=all resources, sto=all except dib image, vms=only vms and networks, default by vms
 #   P: uppercase, prefix for node name, default by cactus
 # Example:
-#   make clean s=istio P=cactus c=dib
+#   make clean P=cactus c=dib
 #
 endef
 .phone: clean
@@ -80,7 +78,7 @@ clean:
 	@echo "$$CLEAN_HELP"
 else
 clean:
-	sudo CI_DEBUG=$(debug) bash deploy/clean.sh -P $(P) -s $(s) -l $(l) -p $(p)
+	sudo CI_DEBUG=$(debug) bash deploy/clean.sh -P $(P) -l $(l) 
 endif
 
 define APPLY_HELP

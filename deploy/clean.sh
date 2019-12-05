@@ -11,16 +11,11 @@ $(notify_i "USAGE:" 2)
   $(basename "$0") -s scenario -P prefix -c cleanup_level
 
 $(notify_i "OPTIONS:" 2)
-  -s  scenario short-name
-  -p  Pod-name
   -P  VM prefix, \${prefix}_<nodename>
   -l  cleanup level dib or sto
   -h  help information
 
 $(notify_i "Input parameters to the build script are:" 2)
--s Deployment-scenario, this points to a short deployment scenario name, which
-   has to be defined in config directory (e.g. calico-noha).
--p POD name as defined in the configuration directory, e.g. pod2
 -P Prefix of vm name, e.g. if prefix=cactus, vm name will be cactus_<node name>
 -l cleanup level dib=all resources(vm, network, dib image, k8s images,,,etc), 
    sto=all resources except dib image and k8s images, used by default,
@@ -53,11 +48,9 @@ LEVEL=sto
 ##############################################################################
 # BEGIN of main
 #
-while getopts "p:s:P:l:h" OPTION
+while getopts "P:l:h" OPTION
 do
   case $OPTION in
-    p) TARGET_POD=${OPTARG} ;;
-    s) SCENARIO=${OPTARG} ;;
     P) PREFIX=${OPTARG}; TMP_DIR=/tmp/cactus_${PREFIX} ;;
     l) LEVEL=${OPTARG} ;;
     h) usage; exit 0 ;;
@@ -83,15 +76,6 @@ pushd "${DEPLOY_DIR}" > /dev/null
 if ! virsh list >/dev/null 2>&1; then
   notify_e "[ERROR] This script requires hypervisor access!"
 fi
-
-# Infra setup
-parse_idf
-
-update_bridges
-
-parse_pdf
-
-parse_scenario
 
 cleanup_vms
 

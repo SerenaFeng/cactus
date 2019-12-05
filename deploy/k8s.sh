@@ -99,8 +99,8 @@ function deploy_master {
 
         echo -n "Make sure docker&kubelet is ready ..."
         [[ ${nr_hugepages} != 0 ]] && sysctl vm.nr_hugepages=${nr_hugepages}
-        groupadd docker
-        usermod -aG docker cactus
+        groupadd docker || true
+        usermod -aG docker cactus || true
         systemctl enable docker.service
         systemctl enable kubelet.service
         systemctl restart docker
@@ -147,8 +147,8 @@ function deploy_minion {
 
         echo -n "Make sure docker&kubelet is ready ..."
         [[ ${nr_hugepages} != 0 ]] && sysctl vm.nr_hugepages=${nr_hugepages}
-        groupadd docker
-        usermod -aG docker cactus
+        groupadd docker || true
+        usermod -aG docker cactus || true
         systemctl enable docker.service
         systemctl enable kubelet.service
         systemctl restart docker
@@ -247,13 +247,14 @@ DEPLOY_HELMV2
       "
     }
   elif [[ ${cluster_states_helm_version} =~ ^http ]]; then
+    helm_pkg=$(basename ${cluster_states_helm_version})
     ssh ${SSH_OPTS} cactus@$(get_master) bash -s -e << DEPLOY_HELMV3
       set -ex
 
       echo -n "Begin to install helm ..."
-      wget ${cluster_states_helm_version}
+      curl ${cluster_states_helm_version} -o ${helm_pkg}
       mkdir ./helm-tar
-      tar -zxf ${cluster_states_helm_version} --directory ./helm-tar
+      tar -zxf ${helm_pkg} --directory ./helm-tar
       install ./helm-tar/$(ls ./helm-tar)/helm /usr/local/bin
 DEPLOY_HELMV3
 

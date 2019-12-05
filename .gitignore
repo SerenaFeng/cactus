@@ -9,3 +9,6 @@ kubeadm.conf
 *.log
 kube-config/calico/calico.yaml
 config/scenario/istio-remote.yaml
+.bak
+kube-config/calico/v3.1.3.yaml
+kube-config/calico/v3.8.yaml
