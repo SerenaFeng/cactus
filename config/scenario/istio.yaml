@@ -13,16 +13,16 @@ cluster:
     objects:
       - helm
     helm:
-      version: https://get.helm.sh/helm-v3.0.0-rc.3-linux-amd64.tar.gz
+      version: helm-v3.0.2-linux-amd64.tar.gz
       charts:
         - flag: istio_init
           name: istio-init
-          url: https://github.com/SerenaFeng/helm-charts/raw/master/istio/istio-init-1.2.2.tgz
+          path: /home/serena/istio/istio-1.4.2/install/kubernetes/helm/istio-init
           namespace: istio-system
         - flag: istio
           name: istio
-          url: https://github.com/SerenaFeng/helm-charts/raw/master/istio/istio-1.2.2.tgz
+          path: /home/serena/istio/istio-1.4.2/install/kubernetes/helm/istio
           namespace: istio-system
           args:
-            - --values: https://github.com/SerenaFeng/helm-charts/raw/master/istio/values-istio-1.2.2.yaml
-            - --set: kiali.enabled=true,kiali.dashboard.username=admin,kiali.dashboard.passphrase=admin,grafana.enabled=true
+            - --values: /home/serena/istio/istio-1.4.2/install/kubernetes/helm/istio/values-istio-demo.yaml
+            - --set: global.controlPlaneSecurityEnabled=true,global.mtls.enabled=true

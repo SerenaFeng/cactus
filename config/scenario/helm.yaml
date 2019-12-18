@@ -12,10 +12,21 @@ cluster:
     objects:
       - helm
     helm:
-      version: v2.12.2
-#      repos:
-#        # flag is utilized to handle when name is not compatible with bash variable,
-#        # such as istio-init can not be used as the bash variable name
-#        - flag: istio
-#          name: istio
-#          url: http://harbor.oz/chartrepo/istio
+      version: helm-v3.0.2-linux-amd64.tar.gz
+#      # the installation will be like:
+#      # 1. helm install <name> <path> --version <version> --namespace <namespace>
+#      # 2. helm install <name> <url> --version <version> --namespace <namespace>
+#      # 3. helm install <name> <path> --repo <url> --version <version> --namespace <namespace>
+#      charts:
+#        - flag: istio_init
+#          name: istio-init
+#          version: 
+#          # path could be a chart reference, or a path to a packaged/unpackaged chart
+#          path: install/kubernetes/helm/istio-init
+#          # if path is not provided, url is the absoule URL of the chart
+#          # otherwise, it refers to the repo url
+#          url: https://github.com/istio/istio/releases/download/1.4.2/istio-1.4.2-linux.tar.gz
+#          namespace: istio-system
+#          args:
+#            - --values: https://github.com/SerenaFeng/helm-charts/raw/master/istio/values-istio-1.2.2.yaml
+#            - --set: kiali.enabled=true,kiali.dashboard.username=admin

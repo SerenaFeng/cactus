@@ -112,7 +112,7 @@ function deploy_master {
         echo -n "Configure kubectl"
         exit
         set -ex
-        mkdir -p ${REMOTE_KUBECONF}
+        mkdir -p ${REMOTE_KUBECONF} || true
         sudo cp -f /etc/kubernetes/admin.conf ${REMOTE_KUBECONF}/config
         sudo chown -R 1000:1000 ${REMOTE_KUBECONF}
         kubectl taint nodes --all node-role.kubernetes.io/master-
@@ -205,63 +205,39 @@ function deploy_objects {
 }
 
 function wait_istio_init_ok {
+  ns=${1}
   local total_attempts=120
-  local sleep_time=1
 
   set +e
   echo "Wait for cluster to be ready ....."
   for attempt in $(seq "${total_attempts}"); do
-    kube_exc "get crds | grep 'istio.io\|certmanager.k8s.io' | wc -l | grep 53" false
+    kube_exc "-n ${ns} wait --for=condition=complete job --all" false
     case $? in
       0) echo "${attempt}> Istio init finish"; break ;;
       *) echo "${attempt}/${total_attempts}> Istio init ain't ready yet, waiting for ${sleep_time} seconds ..." ;;
     esac
-    sleep ${sleep_time}
   done
   set -e
 }
 
 function deploy_helm {
-  if [[ ${cluster_states_helm_version} =~ ^v2 ]]; then
-    ssh ${SSH_OPTS} cactus@$(get_master) bash -s -e << DEPLOY_HELMV2
-      set -ex
+  helm_unpack=$(echo ${cluster_states_helm_version%%.tar.gz} | cut -d'-' -f3-4)
+  ssh ${SSH_OPTS} cactus@$(get_master) bash -s -e << DEPLOY_HELM
+    sudo su
+    set -ex
 
-      echo -n "Begin to install helm ..."
-      curl https://raw.githubusercontent.com/kubernetes/helm/${cluster_states_helm_version}/scripts/get > ./get
-      chmod +x ./get
-      bash ./get -v ${cluster_states_helm_version}
+    rm -fr ./${helm_unpack}
+    echo -n "Begin to install helm ${cluster_states_helm_version} on k8s master ..."
+    curl -L https://get.helm.sh/${cluster_states_helm_version} -o ${cluster_states_helm_version}
+    tar -zxf ${cluster_states_helm_version}
+    install ./${helm_unpack}/helm /usr/local/bin
+DEPLOY_HELM
 
-      helm init --wait --service-account tiller || true
-      helm repo remove stable || true
-      helm version || true
-DEPLOY_HELMV2
-
-    [[ ${ONSITE} -eq 0 ]] && {
-      echo "Init local helm client,for debug local chart ..."
-      sudouser_exc "
-        KUBECONFIG=${LOCAL_KUBECONF}
-        rm -fr ${LOCAL_HELMCONF}
-        ${HELM} init --client-only
-        ${HELM} repo remove stable
-        ${HELM} version
-      "
-    }
-  elif [[ ${cluster_states_helm_version} =~ ^http ]]; then
-    helm_pkg=$(basename ${cluster_states_helm_version})
-    ssh ${SSH_OPTS} cactus@$(get_master) bash -s -e << DEPLOY_HELMV3
-      set -ex
-
-      echo -n "Begin to install helm ..."
-      curl ${cluster_states_helm_version} -o ${helm_pkg}
-      mkdir ./helm-tar
-      tar -zxf ${helm_pkg} --directory ./helm-tar
-      install ./helm-tar/$(ls ./helm-tar)/helm /usr/local/bin
-DEPLOY_HELMV3
-
-  elif [[ -n ${cluster_states_helm_version} ]]; then
-    echo "Unsupport helm version: ${cluster_states_helm_version}"
-    return 1
-  fi
+  echo "Begin to install helm ${cluster_states_helm_version} locally ..."
+  curl -L https://get.helm.sh/${cluster_states_helm_version} -o ${cluster_states_helm_version}
+  tar -zxf ${cluster_states_helm_version}
+  install ./${helm_unpack}/helm /usr/local/bin
+  rm -fr ${cluster_states_helm_version} ./${helm_unpack}
 
   [[ -n "${cluster_states_helm_repos[@]}" ]] && {
     echo -n "Begin to add repos ..."
@@ -279,10 +255,10 @@ DEPLOY_HELMV3
     for chart in "${cluster_states_helm_charts[@]}"; do
       name=$(eval echo "\$cluster_states_helm_charts_${chart}_name")
       version=$(eval echo "\$cluster_states_helm_charts_${chart}_version")
+      path=$(eval echo "\$cluster_states_helm_charts_${chart}_path")
       namespace=$(eval echo "\$cluster_states_helm_charts_${chart}_namespace")
       r_chart=$(eval echo "\$cluster_states_helm_charts_${chart}_url")
       args=$(eval echo "\$cluster_states_helm_charts_${chart}_args")
-      [[ -n ${name} ]] && r_name="--name ${name}"
       [[ -n ${version} ]] && r_version="--version ${version}"
       [[ -n ${namespace} ]] && {
         kube_exc "create namespace ${namespace}" || true
@@ -292,9 +268,10 @@ DEPLOY_HELMV3
         r_args=$(echo "${args//___/ }")
       }
 
-      echo -n "Install chart: ${r_name} ${r_version} ${r_namespace} ${r_args} ${r_chart}"
-      master_exc "helm install ${r_name} ${r_version} ${r_namespace} ${r_args} ${r_chart}" || true
-      [[ ${name} =~ istio-init ]] && wait_istio_init_ok
+      [[ -n ${path} && -n ${r_chart} ]] && r_chart="--repo ${r_chart}"
+      echo -n "Install chart: ${name} ${path} ${r_chart} ${r_version} ${r_namespace} ${r_args}"
+      helm install ${name} ${path} ${r_chart} ${r_version} ${r_namespace} ${r_args}
+      [[ ${name} =~ istio-init ]] && wait_istio_init_ok ${namespace}
     done
   } || true
 }

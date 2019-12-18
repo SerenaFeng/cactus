@@ -123,3 +123,7 @@ delete:
 	kubectl delete -f $(CONFDIR)/$(o)
 endif
 
+.phone: istio
+istio: 
+	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s istio -p istio -P istio -l vms
+
