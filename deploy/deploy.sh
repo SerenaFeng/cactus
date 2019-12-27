@@ -38,7 +38,15 @@ EOF
 
 
 do_exit () {
-  notify_n "[OK] Cactus: Kubernetes installation finished succesfully!\n\n" 2
+  if [[ 0 == $? ]]; then
+    notify_n "[OK] Cactus: Kubernetes installation finished succesfully!\n\n" 2
+  else
+    notify_n "[KO] Cactus: Kubernetes installation failed!\n\n" 2
+  fi
+}
+
+do_sig () {
+  notify_n "[KO] Cactus: Kubernetes installation failed by signal!\n\n" 2 
 }
 
 export TERM=xterm
@@ -89,7 +97,8 @@ source "${DEPLOY_DIR}/vms.sh"
 source "${DEPLOY_DIR}/k8s.sh"
 
 # Enable the automatic exit trap
-trap do_exit SIGINT SIGTERM EXIT
+trap do_exit EXIT
+trap do_sig SIGINT SIGTERM
 
 pushd "${DEPLOY_DIR}" > /dev/null
 

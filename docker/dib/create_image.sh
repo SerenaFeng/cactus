@@ -31,7 +31,7 @@ function create_master_centos7_image {
     ELEMENTS_PATH=/elements \
     DIB_YUM_REPO_CONF=$K8S_YUM_REPO \
     DIB_DEV_USER_USERNAME=cactus \
-    DIB_DEV_USER_PASSWORD=cactus \
+    DIB_DEV_USER_PASSWORD=Cactus123! \
     DIB_DEV_USER_PWDLESS_SUDO=true \
     DIB_DEV_USER_AUTHORIZED_KEYS=$K8S_PUBKEY \
     disk-image-create centos7 vm dhcp-all-interfaces \
@@ -49,7 +49,7 @@ function create_minion_centos7_image {
     ELEMENTS_PATH=/elements \
     DIB_YUM_REPO_CONF=$K8S_YUM_REPO \
     DIB_DEV_USER_USERNAME=cactus \
-    DIB_DEV_USER_PASSWORD=cactus \
+    DIB_DEV_USER_PASSWORD=Cactus123!\
     DIB_DEV_USER_PWDLESS_SUDO=true \
     DIB_DEV_USER_AUTHORIZED_KEYS=$K8S_PUBKEY \
     disk-image-create centos7 vm dhcp-all-interfaces \

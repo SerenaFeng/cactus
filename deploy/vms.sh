@@ -56,6 +56,10 @@ function build_images {
     echo "build diskimage_builder image... "
     pushd ${REPO_ROOT_PATH}/docker/dib
     docker build -t ${builder_image} .
+    [[ 0 != $? ]] && {
+      echo "Build diskimage_builder image ${builder_image} failed"
+      exit 1
+    }
     popd
   }
 
@@ -68,6 +72,10 @@ function build_images {
            --rm \
            ${builder_image} \
            bash /create_image.sh ${cluster_version}
+  [[ 0 != $? ]] && {
+    echo "Create base images failed"
+    exit 1
+  }
 }
 
 function cleanup_vms {

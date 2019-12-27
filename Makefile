@@ -40,7 +40,7 @@ install:
 	bash k8s/k8sm.sh
 else
 install:
-	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s $(s) -p $(p) -P $(P) -l $(l)
+	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s $(s) -p $(p) -P $(P) -l $(l) 2>&1 | tee $(P).log
 endif
 
 define STOP_HELP
@@ -125,5 +125,8 @@ endif
 
 .phone: istio
 istio: 
-	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s istio -p istio -P istio -l vms
+	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s istio -p istio -P istio -l vms 2>&1 | tee istio.log
+.phone: helm
+helm: 
+	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s helm -p helm -P helm -l vms 2>&1 | tee helm.log
 

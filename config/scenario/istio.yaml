@@ -2,7 +2,7 @@
 cluster:
   name: istio
   domain: istio.k8s
-  version: v1.16.2
+  version: v1.16.4
 #  pod_cidr: 10.244.32.0/20
   enable_admission: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
 #  service_cidr: 192.168.32.0/20
@@ -23,6 +23,6 @@ cluster:
           name: istio
           path: /home/serena/istio/istio-1.4.2/install/kubernetes/helm/istio
           namespace: istio-system
-          args:
-            - --values: /home/serena/istio/istio-1.4.2/install/kubernetes/helm/istio/values-istio-demo.yaml
-            - --set: global.controlPlaneSecurityEnabled=true,global.mtls.enabled=true
+#          args:
+#            - --values: /home/serena/istio/istio-1.4.2/install/kubernetes/helm/istio/values-istio-demo.yaml
+#            - --set: global.controlPlaneSecurityEnabled=true,global.mtls.enabled=true

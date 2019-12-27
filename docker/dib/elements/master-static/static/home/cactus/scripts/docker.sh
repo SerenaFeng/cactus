@@ -1,8 +1,8 @@
 #!/bin/bash
+# shortcut for docker
 
 USAGE="Supported Commands:\n
-  in:   docker exec -ti \$@ bash\n
-  exec: bash ~/scripts/d-exec.sh \$container \$cmd\n
+  ex: bash ~/scripts/d-exec.sh \$container \$cmd\n
   rm:   docker rm -f\n
   rms:  d find $@ | xargs docker rm -f\n
   ims:  docker images\n
@@ -22,9 +22,7 @@ cmd=$1
 shift
 
 case $cmd in
-  in) 
-    docker exec -ti $@ bash ;;
-  exec) 
+  ex) 
     bash ~/scripts/d-exec.sh $@ ;;
   rm) 
     docker rm -f $@ ;;
@@ -35,12 +33,18 @@ case $cmd in
   rmi)
     docker rmi $@ ;;
   rmis)
-    docker images | grep $@ | grep -v grep | awk '{print $3}' | xargs -I {} docker rmi {} &>/dev/null ;;
+    for item in "$@"; do
+      echo "start to clean $item"
+      docker images | grep $item | grep -v grep | awk '{print $3}' | xargs -I {} docker rmi {} #&>/dev/null
+    done
+    ;;
   ps)
-    docker ps ;;
+    docker ps $@;;
   psa)
     docker ps -a ;;
   find)
-    docker ps -a | grep $@
+    docker ps -a | grep $@ ;;
+  *)
+    docker $cmd $@ ;;
 esac
 
