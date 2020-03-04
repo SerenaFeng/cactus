@@ -125,8 +125,10 @@ endif
 
 .phone: istio
 istio: 
-	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s istio -p istio -P istio -l vms 2>&1 | tee istio.log
+	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s istio -p pod11 -P istio -l vms 2>&1 | tee istio.log
 .phone: helm
 helm: 
-	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s helm -p helm -P helm -l vms 2>&1 | tee helm.log
+	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s helm -p pod7 -P helm -l vms 2>&1 | tee helm.log
 
+cilium: 
+	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s cilium -p pod117 -P cilium -l vms 2>&1 | tee cilium.log

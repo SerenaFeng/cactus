@@ -1,0 +1,12 @@
+---
+cluster:
+  domain: cactus.k8s
+  version: v1.16.4
+  enable_admission: NodeRestriction
+  pod_cidr: 10.244.0.0/16
+# service_cidr: 192.168.11.0/24
+  states:
+    cni: cilium/v1.7.0
+    cri: docker
+#    csi:
+#    objects:

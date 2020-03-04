@@ -2,8 +2,8 @@
 
 REMOTE_KUBECONF=/home/cactus/.kube
 LOCAL_KUBECONF=$HOME/.kube.${PREFIX}
-LOCAL_KUBEDIR="${REPO_ROOT_PATH}/kube-config"
-REMOTE_KUBEDIR=/home/cactus/kube-config
+LOCAL_ADDONS="${REPO_ROOT_PATH}/addons"
+REMOTE_ADDONS=/home/cactus/addons
 HELM=$HOME/.helmctl/bin/helm
 ISTIOCTL=$HOME/.istioctl/bin/istioctl
 
@@ -43,10 +43,10 @@ function kube_exc {
 
 function kube_apply {
   if [[ ${ONSITE} -eq 0 ]]; then
-    sudouser_exc "kubectl --kubeconfig ${LOCAL_KUBECONF}/config apply -f ${LOCAL_KUBEDIR}/${@}"
+    sudouser_exc "kubectl --kubeconfig ${LOCAL_KUBECONF}/config apply -f ${LOCAL_ADDONS}/${@}"
     return $?
   else
-    master_exc "kubectl apply -f ${REMOTE_KUBEDIR}/${@}"
+    master_exc "kubectl apply -f ${REMOTE_ADDONS}/${@}"
     return $?
   fi
 }
@@ -58,10 +58,12 @@ function render_service_cidr {
 }
 
 function render_cni_cidr {
-  template=${LOCAL_KUBEDIR}/${1}.yaml.template
-  eval "cat <<-EOF
+  if [[ -f ${LOCAL_ADDONS}/${1}.yaml.template ]]; then
+    template=${LOCAL_ADDONS}/${1}.yaml.template
+    eval "cat <<-EOF
 $(<"${template}")
-EOF" 2> /dev/null > ${LOCAL_KUBEDIR}/${1}.yaml
+EOF" 2> /dev/null > ${LOCAL_ADDONS}/${1}.yaml
+  fi
 }
 
 function compose_kubeadm_config {
