@@ -12,17 +12,27 @@ cluster:
 #    csi:
     objects:
       - helm
-    helm:
-      version: helm-v3.0.2-linux-amd64.tar.gz
-      charts:
-        - flag: istio_init
-          name: istio-init
-          path: /home/serena/istio/istio-1.4.2/install/kubernetes/helm/istio-init
-          namespace: istio-system
-        - flag: istio
-          name: istio
-          path: /home/serena/istio/istio-1.4.2/install/kubernetes/helm/istio
-          namespace: istio-system
+#    helm:
+#      version: helm-v3.0.2-linux-amd64.tar.gz
+#      charts:
+#        - flag: istio_init
+#          name: istio-init
+#          path: /home/serena/istio/istio-1.4.2/install/kubernetes/helm/istio-init
+#          namespace: istio-system
+#        - flag: istio
+#          name: istio
+#          path: /home/serena/istio/istio-1.4.2/install/kubernetes/helm/istio
+#          namespace: istio-system
 #          args:
 #            - --values: /home/serena/istio/istio-1.4.2/install/kubernetes/helm/istio/values-istio-demo.yaml
 #            - --set: global.controlPlaneSecurityEnabled=true,global.mtls.enabled=true
+    istio:
+      version: 1.4.2
+      args:
+#        - -f: /home/serena/k8s/cactus/config/scenario/istio-egress.yaml
+#        - --set: profile=demo
+        - --set: values.global.meshExpansion.enabled=true
+#        - --set: values.global.mtls.enabled=false
+#        - --set: values.global.controlPlaneSecurityEnabled=false
+#        - --set: values.global.trustDomain=ori-td
+      auto_inject: default

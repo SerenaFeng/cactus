@@ -4,8 +4,8 @@ REMOTE_KUBECONF=/home/cactus/.kube
 LOCAL_KUBECONF=$HOME/.kube.${PREFIX}
 LOCAL_KUBEDIR="${REPO_ROOT_PATH}/kube-config"
 REMOTE_KUBEDIR=/home/cactus/kube-config
-LOCAL_HELMCONF=/home/.helm.${PREFIX}
-HELM="$(which helm) --home ${LOCAL_HELMCONF}"
+HELM=$HOME/.helmctl/bin/helm
+ISTIOCTL=$HOME/.istioctl/bin/istioctl
 
 function parse_labels {
   set +x
@@ -153,8 +153,12 @@ function deploy_minion {
         systemctl enable kubelet.service
         systemctl restart docker
 
-        echo -n "Begin to join cluster"
-        ${KUBE_JOIN} --node-name $(eval echo "\$nodes_${vnode}_hostname")
+        if [[ $(eval echo "\$nodes_${vnode}_cloud_native_enabled") =~ (t|T)rue ]]; then
+          echo -n "Begin to join cluster"
+          ${KUBE_JOIN} --node-name $(eval echo "\$nodes_${vnode}_hostname")
+        else
+          echo "Not a cluster node"
+        fi
 DEPLOY_MINION
       fi
       echo "Finish deploying minion ${vnode} ... "
@@ -192,7 +196,9 @@ function wait_cluster_ready {
 
   for vnode in "${vnodes[@]}"; do
     read -r -a labels <<< $(parse_labels ${vnode})
-    [[ -n "${labels[@]}" ]] && kube_exc "label node ${vnode} ${labels[@]}"
+    if [[ -n "${labels[@]}" ]]; then
+      kube_exc "label node ${vnode} ${labels[@]}"
+    fi
   done
 }
 
@@ -220,25 +226,32 @@ function wait_istio_init_ok {
   set -e
 }
 
-function deploy_helm {
-  helm_unpack=$(echo ${cluster_states_helm_version%%.tar.gz} | cut -d'-' -f3-4)
-  ssh ${SSH_OPTS} cactus@$(get_master) bash -s -e << DEPLOY_HELM
-    sudo su
-    set -ex
+function is_helm_version {
+  info=`${HELM} version --short`
+  version=$(echo ${cluster_states_helm_version} | cut -d'-' -f2)
+  if [[ $info =~ ${version} ]]; then
+    return true
+  else
+    return false
+  fi
+}
 
-    rm -fr ./${helm_unpack}
-    echo -n "Begin to install helm ${cluster_states_helm_version} on k8s master ..."
+
+function deploy_helm {
+  [[ -z ${cluster_states_helm_version} ]] && {
+    return
+  }
+
+  [[ ! -f ${HELM} ]] || [[ false == $(is_helm_version) ]] && {
+    echo "Begin to install helm ${cluster_states_helm_version} ..."
+   
+    helm_unpack=$(echo ${cluster_states_helm_version%%.tar.gz} | cut -d'-' -f3-4)
     curl -L https://get.helm.sh/${cluster_states_helm_version} -o ${cluster_states_helm_version}
     tar -zxf ${cluster_states_helm_version}
-    install ./${helm_unpack}/helm /usr/local/bin
-DEPLOY_HELM
-
-  echo "Begin to install helm ${cluster_states_helm_version} locally ..."
-  curl -L https://get.helm.sh/${cluster_states_helm_version} -o ${cluster_states_helm_version}
-  tar -zxf ${cluster_states_helm_version}
-  install ./${helm_unpack}/helm /usr/local/bin
-  rm -fr ${cluster_states_helm_version} ./${helm_unpack}
-
+    mkdir -p $(dirname ${HELM}) || true
+    install ./${helm_unpack}/helm ${HELM}
+    rm -fr ${cluster_states_helm_version} ./${helm_unpack}
+  }
   [[ -n "${cluster_states_helm_repos[@]}" ]] && {
     echo -n "Begin to add repos ..."
     for repo in "${cluster_states_helm_repos[@]}"; do
@@ -246,7 +259,7 @@ DEPLOY_HELM
       url=$(eval echo "\$cluster_states_helm_repos_${repo}_url")
 
       echo -n "Add repo: ${name}: ${url}"
-      master_exc "helm repo add ${name} ${url}" || true
+      master_exc "${HELM} repo add ${name} ${url}" || true
     done
   } || true
  
@@ -270,9 +283,45 @@ DEPLOY_HELM
 
       [[ -n ${path} && -n ${r_chart} ]] && r_chart="--repo ${r_chart}"
       echo -n "Install chart: ${name} ${path} ${r_chart} ${r_version} ${r_namespace} ${r_args}"
-      helm install ${name} ${path} ${r_chart} ${r_version} ${r_namespace} ${r_args}
+      ${HELM} install ${name} ${path} ${r_chart} ${r_version} ${r_namespace} ${r_args}
       [[ ${name} =~ istio-init ]] && wait_istio_init_ok ${namespace}
     done
   } || true
 }
 
+function is_istioctl_version {
+  info=$(${ISTIOCTL} version --remote=false)
+  if [[ ${info} == ${cluster_states_istio_version} ]]; then
+    echo true
+  else
+    echo false
+  fi
+}
+
+function deploy_istio {
+  version=${cluster_states_istio_version}
+  args=${cluster_states_istio_args}
+
+  [[ -z ${version} ]] && [[ -z ${args} ]] && {
+    return
+  }
+
+  [[ ! -f ${ISTIOCTL} ]] || [[ false == $(is_istioctl_version) ]] && {
+    echo "Begin to install istioctl ${version}"
+    [[ -n ${version} ]] && export ISTIO_VERSION=${version}
+    curl -sL https://istio.io/downloadIstioctl | sh -
+  }
+
+  [[ -n ${args} ]] && {
+    args=$(echo "${args//___/ }")
+  }
+
+  ${ISTIOCTL} manifest apply ${args}
+
+  [[ -n ${cluster_states_istio_auto_inject} ]] && {
+    IFS=","; for ns in ${cluster_states_istio_auto_inject}; do
+      kube_exc "create namespace ${ns}" || true
+      kube_exc "label namespace ${ns} istio-injection=enabled" || true
+    done
+  }
+}

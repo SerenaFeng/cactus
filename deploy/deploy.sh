@@ -154,3 +154,5 @@ wait_cluster_ready
 deploy_objects
 
 deploy_helm
+
+deploy_istio

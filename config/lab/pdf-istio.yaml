@@ -45,6 +45,12 @@ nodes:
     cloud_native:
       enabled: true
       master: false
-    labels:
-      purpose: mostuse
+    node: *nodeparams
+  - name: minion03
+    enabled: True
+    node_id: 5
+    hostname: minion02
+    cloud_native:
+      enabled: false
+      master: false
     node: *nodeparams
