@@ -4,7 +4,7 @@ version: 1.0
 details:
   lab_owner: SerenaFeng
   contact: serena.feng.711@gmail.com
-  lab: Istio-Lab
+  lab: cilium-Lab
   location: Shanghai
   type: experimental
   link: ''

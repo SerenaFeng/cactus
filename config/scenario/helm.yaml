@@ -1,9 +1,11 @@
 ---
 cluster:
   domain: helm.k8s
-  version: v1.16.4
+  version: v1.17.3
+  image: ubuntu_bionic.qcow2
 #  pod_cidr: 10.44.0.0/16
-  enable_admission: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
+  enable_admission: NodeRestriction,PodPreset
+  runtime_config: api/all=true
 #  service_cidr: 192.168.11.0/24
   states:
     cni: calico/v3.8

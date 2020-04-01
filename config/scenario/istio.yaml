@@ -5,6 +5,7 @@ cluster:
   version: v1.16.4
 #  pod_cidr: 10.244.32.0/20
   enable_admission: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
+  runtime_config: api/all=true
 #  service_cidr: 192.168.32.0/20
   states:
     cni: calico/v3.8

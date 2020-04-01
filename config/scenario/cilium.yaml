@@ -1,8 +1,10 @@
 ---
 cluster:
-  domain: cactus.k8s
-  version: v1.16.4
-  enable_admission: NodeRestriction
+  domain: cilium.k8s
+  version: v1.17.3
+  image: ubuntu_bionic.qcow2
+  enable_admission: NodeRestriction,PodPreset
+  runtime_config: api/all=true
   pod_cidr: 10.244.0.0/16
 # service_cidr: 192.168.11.0/24
   states:

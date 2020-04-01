@@ -10,9 +10,10 @@ apiServer:
   extraArgs:
     advertise-address: $(get_mgmt_ip ${vnode})
     enable-admission-plugins: ${cluster_enable_admission}
+    runtime-config: ${cluster_runtime_config}
 networking:
   podSubnet: ${cluster_pod_cidr}
   $(render_service_cidr)
 kubernetesVersion: ${cluster_version}
-clusterName: ${cluster_name}
+clusterName: ${cluster_domain}
 

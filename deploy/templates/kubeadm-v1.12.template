@@ -4,10 +4,11 @@ api:
   advertiseAddress: $(get_mgmt_ip ${vnode})
 apiServerExtraArgs:
   enable-admission-plugins: ${cluster_enable_admission}
+  runtime-config: ${cluster_runtime_config}
 networking:
   podSubnet: ${cluster_pod_cidr}
   $(render_service_cidr)
 kubernetesVersion: ${cluster_version}
-clusterName: ${cluster_name}
+clusterName: ${cluster_domain}
 nodeRegistration:
   name: $(eval echo "\$nodes_${vnode}_hostname")

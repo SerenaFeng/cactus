@@ -5,7 +5,7 @@ builder_image=cactus/dib:latest
 dib_name=cactus_image_builder
 
 function imagedir {
-  echo ${STORAGE_DIR}/k8s_${cluster_version}
+  echo ${STORAGE_DIR}/${cluster_version}
 }
 
 function diskdir {
@@ -67,11 +67,11 @@ function build_images {
   docker run -it \
            --name ${dib_name} \
            -v ${STORAGE_DIR}:/imagedata \
-           -v ${REPO_ROOT_PATH}/kube-config:/elements/master-static/static/home/cactus/kube-config \
+           -v ${SSH_KEY}.pub:/work/rsa.pub \
            --privileged \
            --rm \
            ${builder_image} \
-           bash /create_image.sh ${cluster_version}
+           bash /work/create_image.sh ${cluster_version} ${cluster_image}
   [[ 0 != $? ]] && {
     echo "Create base images failed"
     exit 1
@@ -99,14 +99,10 @@ function prepare_vms {
 
   # Create vnode images and resize OS disk image for each foundation node VM
   for vnode in "${vnodes[@]}"; do
-    if [ $(eval echo "\$nodes_${vnode}_enabled") == "True" ]; then
-      role=$(get_role $vnode)
-      echo "preparing for $role vnode: [${vnode}]"
-      image="${role}.qcow2"
-      cp "$(imagedir)/${image}" "$(diskdir)/${vnode}.qcow2"
-      disk_capacity="nodes_${vnode}_node_disk"
-      qemu-img resize "$(diskdir)/${vnode}.qcow2" ${!disk_capacity}
-    fi
+    echo "preparing for vnode: [${vnode}]"
+    cp "$(imagedir)/${cluster_image}" "$(diskdir)/${vnode}.qcow2"
+    disk_capacity="nodes_${vnode}_node_disk"
+    qemu-img resize "$(diskdir)/${vnode}.qcow2" ${!disk_capacity}
   done
 }
 
