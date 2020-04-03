@@ -49,8 +49,8 @@ nodes:
   - name: minion03
     enabled: True
     node_id: 5
-    hostname: minion02
+    hostname: minion03
     cloud_native:
-      enabled: false
+      enabled: true
       master: false
     node: *nodeparams

@@ -1,8 +1,8 @@
 ---
 cluster:
-  domain: cactus.k8s
+  domain: basic.k8s
   version: v1.17.3
-  image: centos7.qcow2
+  image: ubuntu_bionic.qcow2
   enable_admission: NodeRestriction
   runtime_config: api/all=true
   pod_cidr: 10.244.0.0/16

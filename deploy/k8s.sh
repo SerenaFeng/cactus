@@ -57,6 +57,12 @@ function render_service_cidr {
    }
 }
 
+function render_dns_domain {
+  [[ -n ${cluster_domain} ]] && {
+    echo "dnsDomain: ${cluster_domain}"
+   }
+}
+
 function render_cni_cidr {
   if [[ -f ${LOCAL_ADDONS}/${1}.yaml.template ]]; then
     template=${LOCAL_ADDONS}/${1}.yaml.template

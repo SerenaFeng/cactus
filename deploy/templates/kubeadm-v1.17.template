@@ -14,6 +14,7 @@ apiServer:
 networking:
   podSubnet: ${cluster_pod_cidr}
   $(render_service_cidr)
+  $(render_dns_domain)
 kubernetesVersion: ${cluster_version}
 clusterName: ${cluster_domain}
 

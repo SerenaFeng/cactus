@@ -123,12 +123,12 @@ delete:
 	kubectl delete -f $(CONFDIR)/$(o)
 endif
 
-.phone: istio
+.PHONY: istio helm cilium basic
 istio: 
-	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s istio -p pod11 -P istio -l vms 2>&1 | tee istio.log
-.phone: helm
+	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s istio -p pod1 -P istio -l vms 2>&1 | tee istio.log
 helm: 
 	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s helm -p pod7 -P helm -l vms 2>&1 | tee helm.log
-
 cilium: 
-	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s cilium -p pod117 -P cilium -l vms 2>&1 | tee cilium.log
+	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s cilium -p pod2 -P cilium -l vms 2>&1 | tee cilium.log
+basic: 
+	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s basic -p pod11 -P basic  -l vms 2>&1 | tee basic.log
