@@ -20,7 +20,6 @@ nodes:
   - name: master01
     enabled: True
     node_id: 2
-    hostname: master01
     cloud_native:
       enabled: true
       master: true
@@ -31,7 +30,6 @@ nodes:
   - name: minion01
     enabled: True
     node_id: 3
-    hostname: minion01
     cloud_native:
       enabled: true
       master: false
@@ -41,7 +39,6 @@ nodes:
   - name: minion02
     enabled: True
     node_id: 4
-    hostname: minion02
     cloud_native:
       enabled: true
       master: false
@@ -49,7 +46,6 @@ nodes:
   - name: minion03
     enabled: True
     node_id: 5
-    hostname: minion03
     cloud_native:
       enabled: true
       master: false

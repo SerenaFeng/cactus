@@ -163,7 +163,7 @@ function deploy_minion {
 
         if [[ $(eval echo "\$nodes_${vnode}_cloud_native_enabled") =~ (t|T)rue ]]; then
           echo -n "Begin to join cluster"
-          ${KUBE_JOIN} --node-name $(eval echo "\$nodes_${vnode}_hostname")
+          ${KUBE_JOIN} --node-name ${vnode}
         else
           echo "Not a cluster node"
         fi
@@ -322,6 +322,8 @@ function deploy_istio {
 
   [[ -n ${args} ]] && {
     args=$(echo "${args//___/ }")
+  } || {
+    args="--skip-confirmation"
   }
 
   ${ISTIOCTL} manifest apply ${args}

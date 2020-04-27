@@ -2,13 +2,13 @@
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
 nodeRegistration:
-  name: $(eval echo "\$nodes_${vnode}_hostname")
+  name: ${vnode}
 ---
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: ClusterConfiguration
 apiServer:
   extraArgs:
-    advertise-address: $(get_mgmt_ip ${vnode})
+    advertise-address: $(get_admin_ip ${vnode})
     enable-admission-plugins: ${cluster_enable_admission}
     runtime-config: ${cluster_runtime_config}
 networking:

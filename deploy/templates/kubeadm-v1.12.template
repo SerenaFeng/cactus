@@ -1,7 +1,7 @@
 apiVersion: kubeadm.k8s.io/v1alpha2
 kind: MasterConfiguration
 api:
-  advertiseAddress: $(get_mgmt_ip ${vnode})
+  advertiseAddress: $(get_admin_ip ${vnode})
 apiServerExtraArgs:
   enable-admission-plugins: ${cluster_enable_admission}
   runtime-config: ${cluster_runtime_config}
@@ -11,4 +11,4 @@ networking:
 kubernetesVersion: ${cluster_version}
 clusterName: ${cluster_domain}
 nodeRegistration:
-  name: $(eval echo "\$nodes_${vnode}_hostname")
+  name: ${vnode}

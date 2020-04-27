@@ -36,11 +36,6 @@ function prepare_networks {
     exit 1
   }
 
-  [[ ! "${BR_NAMES[@]}" =~ "mgmt" ]] && {
-    notify_n "[ERR] Bridge mgmt must be defined\n" 2
-    exit 1
-  }
-
   # Expand network templates
   for tp in "${TEMPLATE_DIR}/"*.template; do
     eval "cat <<-EOF
@@ -99,10 +94,12 @@ function prepare_vms {
 
   # Create vnode images and resize OS disk image for each foundation node VM
   for vnode in "${vnodes[@]}"; do
+    image="$(diskdir)/${vnode}.qcow2"
     echo "preparing for vnode: [${vnode}]"
-    cp "$(imagedir)/${cluster_image}" "$(diskdir)/${vnode}.qcow2"
+    cp "$(imagedir)/${cluster_image}" "${image}"
     disk_capacity="nodes_${vnode}_node_disk"
-    qemu-img resize "$(diskdir)/${vnode}.qcow2" ${!disk_capacity}
+    qemu-img resize ${image} ${!disk_capacity}
+    virt-customize -a ${image} --hostname "${vnode}.${PREFIX}" --run-command "sed -i \"s/cactus:x:1000:1000::\/home\/cactus:\/bin\/sh/cactus:x:1000:1000::\/home\/cactus:\/bin\/bash/g\" /etc/passwd"
   done
 }
 

@@ -7,9 +7,7 @@ idf:
     jumphost:
       bridges:
         admin: admin
-        mgmt: mgmt
         public: public
       fixed_ips:
         admin: 192.168.7.1
-        mgmt: 10.0.7.1
         public: 172.0.7.1

@@ -87,12 +87,6 @@ function get_admin_ip {
   echo $(eval echo "${idf_cactus_jumphost_fixed_ips_admin%.*}.${node_id}")
 }
 
-function get_mgmt_ip {
-  local vnode=${1}
-  local node_id=$(eval echo "\$nodes_${vnode}_node_id")
-  echo $(eval echo "${idf_cactus_jumphost_fixed_ips_mgmt%.*}.${node_id}")
-}
-
 function ssh_exc {
   local ip=${1}; shift
   local cmdstr="$@"; shift
