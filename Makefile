@@ -58,7 +58,7 @@ stop:
 	@echo "$$STOP_HELP"
 else
 stop: 
-	bash ./stop.sh
+	bash opts/stop.sh
 endif
 
 define CLEAN_HELP

@@ -1,23 +1,30 @@
 # !/bin/bash
 
-set -e
-
 onto=${1}
 
-[[ ${onto} == "" ]] && {
-  workon=$(readlink -f ~/.kube)
-  echo "k8s is working on cluster [${workon##*.}]"
-  exit 0
-}
+if [[ ${onto} == "" ]]; then
+  [[ ${K8SON} == "" ]] && {
+    workon=$(readlink -f ~/.kube)
+  } || {
+    workon=${K8SON}
+  }
+  echo "${workon##*.}"
+else
+  [[ ! -d ~/.kube.${onto} ]] && {
+    echo "cluster ${onto} not exist"
+    return
+  }
 
-rm -fr ~/.kube || true
-rm -fr ~/.helm || true
+  rm -fr ~/.kube || true
+  rm -fr ~/.helm || true
 
-[[ -d ~/.kube.${onto} ]] || {
-  echo "cluster ${onto} not exist"
-  exit 1
-}
-
-ln -s ~/.kube.${onto} ~/.kube
-[[ -d ~/.helm.${onto} ]] && ln -s ~/.helm.${onto} ~/.helm
+  K8SON=~/.kube.${onto}
+  ln -s ~/.kube.${onto} ~/.kube
+  export K8SON
+  [[ -d ~/.helm.${onto} ]] && {
+    K8SON_HELM=~/.helm.${onto}
+    ln -s ~/.helm.${onto} ~/.helm
+    export K8SON_HELM
+  }
+fi
 
