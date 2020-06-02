@@ -9,6 +9,15 @@ if [[ ${onto} == "" ]]; then
     workon=${K8SON}
   }
   echo "${workon##*.}"
+elif [[ ${onto} == "ls" ]]; then
+  dirs=$(ls -d ~/.kube.*)
+  scenaries=""
+  for dir in ${dirs}; do
+    scenary=${dir##*.}
+    virsh list | grep ${scenary} > /dev/null
+    [[ 0 == $? ]] && scenaries="${scenaries} ${scenary}"
+  done
+  echo ${scenaries}
 else
   [[ ! -d ~/.kube.${onto} ]] && {
     echo "cluster ${onto} not exist"

@@ -18,6 +18,7 @@ cluster:
 #        - -f: /home/serena/k8s/cactus/config/scenario/istio-egress.yaml
 #        - --set: profile=demo
         - --set: cni.enabled=true
+        - --set: values.cni.logLevel=debug
 #        - --set: values.global.mtls.enabled=false
 #        - --set: values.global.controlPlaneSecurityEnabled=false
 #        - --set: values.global.trustDomain=ori-td

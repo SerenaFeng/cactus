@@ -99,7 +99,7 @@ function prepare_vms {
     cp "$(imagedir)/${cluster_image}" "${image}"
     disk_capacity="nodes_${vnode}_node_disk"
     qemu-img resize ${image} ${!disk_capacity}
-    virt-customize -a ${image} --hostname "${vnode}.${PREFIX}" --run-command "sed -i \"s/cactus:x:1000:1000::\/home\/cactus:\/bin\/sh/cactus:x:1000:1000::\/home\/cactus:\/bin\/bash/g\" /etc/passwd"
+    virt-customize -a ${image} --hostname "${vnode}-${PREFIX}" --run-command "sed -i \"s/cactus:x:1000:1000::\/home\/cactus:\/bin\/sh/cactus:x:1000:1000::\/home\/cactus:\/bin\/bash/g\" /etc/passwd"
   done
 }
 

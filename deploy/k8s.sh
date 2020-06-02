@@ -326,7 +326,11 @@ function deploy_istio {
     args="--skip-confirmation"
   }
 
-  ${ISTIOCTL} manifest apply ${args}
+  if [[ ${version} < "1.6" ]]; then
+    ${ISTIOCTL} manifest apply ${args}
+  else
+   ${ISTIOCTL} install ${args}
+  fi
 
   [[ -n ${cluster_states_istio_auto_inject} ]] && {
     IFS=","; for ns in ${cluster_states_istio_auto_inject}; do

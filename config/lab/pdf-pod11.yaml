@@ -43,10 +43,3 @@ nodes:
       enabled: true
       master: false
     node: *nodeparams
-  - name: minion03
-    enabled: True
-    node_id: 5
-    cloud_native:
-      enabled: true
-      master: false
-    node: *nodeparams

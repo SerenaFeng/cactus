@@ -1,7 +1,7 @@
 ---
 cluster:
   domain: basic.k8s
-  version: v1.17.3
+  version: v1.18.2
   image: ubuntu_bionic.qcow2
   enable_admission: NodeRestriction
   runtime_config: api/all=true

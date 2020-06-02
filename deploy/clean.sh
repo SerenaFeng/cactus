@@ -77,6 +77,9 @@ if ! virsh list >/dev/null 2>&1; then
   notify_e "[ERROR] This script requires hypervisor access!"
 fi
 
+rm -fr ${HOME}/.kube.${PREFIX} || true
+rm -fr ${HOME}/.helm.${PREFIX} || true
+
 cleanup_vms
 
 cleanup_networks
