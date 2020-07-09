@@ -1,6 +1,6 @@
 ---
 cluster:
-  domain: basic.k8s
+#  domain: cluster.local
   version: v1.18.2
   image: ubuntu_bionic.qcow2
   enable_admission: NodeRestriction

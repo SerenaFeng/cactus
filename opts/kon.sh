@@ -24,16 +24,18 @@ else
     return
   }
 
-  rm -fr ~/.kube || true
-  rm -fr ~/.helm || true
-
-  K8SON=~/.kube.${onto}
+  export K8SON=${onto}
+  sudo rm -fr ~/.kube || true
   ln -s ~/.kube.${onto} ~/.kube
-  export K8SON
-  [[ -d ~/.helm.${onto} ]] && {
-    K8SON_HELM=~/.helm.${onto}
-    ln -s ~/.helm.${onto} ~/.helm
-    export K8SON_HELM
+
+  [[ -d ~/.helmctl.${onto} ]] && {
+    sudo rm -fr ~/.helmctl || true
+    ln -s ~/.helmctl.${onto} ~/.helmctl
+  }
+
+  [[ -d ~/.istioctl.${onto} ]] && {
+    sudo rm -fr ~/.istioctl || true
+    ln -s ~/.istioctl.${onto} ~/.istioctl
   }
 fi
 

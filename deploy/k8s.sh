@@ -4,8 +4,10 @@ REMOTE_KUBECONF=/home/cactus/.kube
 LOCAL_KUBECONF=$HOME/.kube.${PREFIX}
 LOCAL_ADDONS="${REPO_ROOT_PATH}/addons"
 REMOTE_ADDONS=/home/cactus/addons
-HELM=$HOME/.helmctl/bin/helm
-ISTIOCTL=$HOME/.istioctl/bin/istioctl
+HELM_PATH=$HOME/.helmctl.${PREFIX}
+HELM=${HELM_PATH}/bin/helm
+ISTIOCTL_PATH=$HOME/.istioctl
+ISTIOCTL=${ISTIOCTL_PATH}/bin/istioctl
 
 function parse_labels {
   set +x
@@ -259,6 +261,7 @@ function deploy_helm {
     mkdir -p $(dirname ${HELM}) || true
     install ./${helm_unpack}/helm ${HELM}
     rm -fr ${cluster_states_helm_version} ./${helm_unpack}
+    ln -s ${HELM_PATH} ${HOME}/.helmctl
   }
   [[ -n "${cluster_states_helm_repos[@]}" ]] && {
     echo -n "Begin to add repos ..."
@@ -316,14 +319,13 @@ function deploy_istio {
 
   [[ ! -f ${ISTIOCTL} ]] || [[ false == $(is_istioctl_version) ]] && {
     echo "Begin to install istioctl ${version}"
-    [[ -n ${version} ]] && export ISTIO_VERSION=${version}
-    curl -sL https://istio.io/downloadIstioctl | sh -
+    [[ -n ${version} ]] && {
+      ISTIO_VERSION=${version} SCENARIO=${PREFIX} sh downloadIstioctl.sh
+    }
   }
 
   [[ -n ${args} ]] && {
     args=$(echo "${args//___/ }")
-  } || {
-    args="--skip-confirmation"
   }
 
   if [[ ${version} < "1.6" ]]; then
@@ -337,5 +339,5 @@ function deploy_istio {
       kube_exc "create namespace ${ns}" || true
       kube_exc "label namespace ${ns} istio-injection=enabled" || true
     done
-  }
+  } || true
 }

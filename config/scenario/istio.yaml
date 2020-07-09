@@ -1,24 +1,21 @@
 ---
 cluster:
   name: istio
-  domain: istio.k8s
+  #domain: istio.k8s
   version: v1.18.2
   image: ubuntu_bionic.qcow2
   pod_cidr: 10.244.0.0/16
   enable_admission: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
   runtime_config: api/all=true
-#  service_cidr: 192.168.32.0/24
   states:
     cni: calico/v3.8
     cri: docker
-#    csi:
+    helm:
+      version: helm-v3.0.2-linux-amd64.tar.gz
     istio:
-      version: 1.6.0
-#      args:
-#        - -f: /home/serena/k8s/cactus/config/scenario/istio-egress.yaml
-#        - --set: profile=demo
-#        - --set: values.global.meshExpansion.enabled=true
-#        - --set: values.global.mtls.enabled=false
-#        - --set: values.global.controlPlaneSecurityEnabled=false
-#        - --set: values.global.trustDomain=ori-td
-      auto_inject: default
+      version: 1.6.2
+      args:
+        #- --set: profile=demo
+        - --filename: /home/serena/k8s/cactus/config/scenario/istio-operator.yaml
+        - --skip-confirmation
+      #auto_inject: default

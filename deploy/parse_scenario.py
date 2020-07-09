@@ -24,8 +24,11 @@ def joint_item(prefix, left):
             if k == 'args':
                 args=""
                 for arg in v:
-                    for ak, av in arg.iteritems():
-                        args='___'.join([args, ak, av])
+                    if isinstance(arg, str):
+                        args='___'.join([args, arg])
+                    else:
+                        for ak, av in arg.iteritems():
+                            args='___'.join([args, ak, av])
                 v=args
             joint_item(_join_prefix(k) if prefix else k, v)
     elif isinstance(left, list):
