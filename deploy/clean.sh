@@ -19,7 +19,7 @@ $(notify_i "Input parameters to the build script are:" 2)
 -P Prefix of vm name, e.g. if prefix=cactus, vm name will be cactus_<node name>
 -l cleanup level dib=all resources(vm, network, dib image, k8s images,,,etc), 
    sto=all resources except dib image and k8s images, used by default,
-   img=all resources except dib image.
+   img=all resources except dib image.nw=delete network definition
 -h Print this help information
 
 $(notify_i "[NOTE] sudo & virsh priviledges are needed for this script to run" 3)
@@ -81,11 +81,9 @@ rm -fr ${HOME}/.kube.${PREFIX} || true
 rm -fr ${HOME}/.helm.${PREFIX} || true
 
 cleanup_vms
-
-cleanup_networks
-
 cleanup_sto
 
-[[ ${LEVEL} == img ]] && cleanup_img
-[[ ${LEVEL} == dib ]] && cleanup_dib
+[[ ${LEVEL} =~ nw ]] && cleanup_networks
+[[ ${LEVEL} =~ img ]] && cleanup_img
+[[ ${LEVEL} =~ dib ]] && cleanup_dib
 

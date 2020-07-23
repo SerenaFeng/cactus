@@ -1,0 +1,15 @@
+---
+cluster:
+  name: xremote
+  #domain: basic.k8s
+  version: v1.18.2
+  image: ubuntu_bionic.qcow2
+  enable_admission: NodeRestriction
+  runtime_config: api/all=true
+#  pod_cidr: 10.244.0.0/16
+# service_cidr: 192.168.11.0/24
+  states:
+    cni: calico/v3.8
+    cri: docker
+#    csi:
+#    objects:

@@ -1,0 +1,40 @@
+### pod descriptor file ###
+
+version: 1.0
+details:
+  lab_owner: SerenaFeng
+  contact: serena.feng.711@gmail.com
+  lab: cilium-Lab
+  location: Shanghai
+  type: experimental
+  link: ''
+
+##############################################################################
+# Note: no symbol of "-" in name, or parser_yaml will not be correct
+nodes:
+  # Note1: name must be unique in pdf, TODO check automatically
+  # Note2: node_id must be started from 2, since it will be used as the
+  #        last figure of admin&mgmt ip.
+  # Note3: symbol of "-" in name will be replaced with "_" automatically,
+  #        or parse_yaml will not be correct since name is the key(not value)
+  - name: master01
+    enabled: True
+    node_id: 12
+    hostname: master01
+    cloud_native:
+      enabled: true
+      master: true
+    node: &nodeparams
+      cpus: 4
+      memory: 10240
+      disk: 40G
+  - name: minion01
+    enabled: True
+    node_id: 13
+    hostname: minion01
+    cloud_native:
+      enabled: true
+      master: false
+    labels:
+      purpose: mostuse
+    node: *nodeparams

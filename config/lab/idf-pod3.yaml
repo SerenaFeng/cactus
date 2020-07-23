@@ -1,0 +1,13 @@
+### interface descriptor file ###
+### note: will be parse as env varibles, so not use # at the end of line
+
+idf:
+  version: 0.1
+  cactus:
+    jumphost:
+      bridges:
+        admin: admin
+        public: public
+      fixed_ips:
+        admin: 192.168.3.1
+        public: 172.0.3.1

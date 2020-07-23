@@ -3,12 +3,9 @@
 onto=${1}
 
 if [[ ${onto} == "" ]]; then
-  [[ ${K8SON} == "" ]] && {
-    workon=$(readlink -f ~/.kube)
-  } || {
-    workon=${K8SON}
-  }
-  echo "${workon##*.}"
+  hardon=$(readlink -f ~/.kube)
+  [[ -n ${K8SON} ]] && softon="softon: [${K8SON##*.}]"
+  echo "hardon: [${hardon##*.}] ${softon}" 
 elif [[ ${onto} == "ls" ]]; then
   dirs=$(ls -d ~/.kube.*)
   scenaries=""

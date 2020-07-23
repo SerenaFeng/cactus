@@ -22,5 +22,5 @@ controllerManager:
   extraArgs:
     feature-gates: "ConfigurableFSGroupPolicy=true"
 kubernetesVersion: ${cluster_version}
-clusterName: ${cluster_domain}
+clusterName: ${cluster_name}
 

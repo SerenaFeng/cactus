@@ -1,0 +1,20 @@
+---
+cluster:
+  name: remote
+  #domain: istio.k8s
+  version: v1.18.2
+  image: ubuntu_bionic.qcow2
+  pod_cidr: 10.2.0.0/16
+  service_cidr: 192.2.0.0/16
+  enable_admission: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
+  runtime_config: api/all=true
+  states:
+    cni: calico/v3.8
+    cri: docker
+#    istio:
+#      version: 1.6.2
+#      args:
+        #- --set: profile=demo
+#        - --filename: /home/serena/k8s/cactus/config/scenario/istio-operator.yaml
+#        - --skip-confirmation
+      #auto_inject: default

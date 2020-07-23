@@ -25,7 +25,7 @@ $(notify_i "Input parameters to the build script are:" 2)
    has to be defined in config directory (e.g. calico-noha).
 -p POD name as defined in the configuration directory, e.g. pod2
 -P Prefix of vm name, e.g. if prefix=cactus, vm name will be cactus_<node name>
--l cleanup level dib=all resources, sto=all resources except dib image, vms=only delete vms and networks
+-l cleanup level dib=all resources, sto=all resources except dib image, nw=delete vms and networks, vms=only delete vms, the default value is nw
 -r Choose to use on-site(configs on the master vm) or local kube-config directory
 -h Print this help information
 
@@ -63,7 +63,7 @@ PREFIX=cactus
 TMP_DIR=/tmp/cactus_${PREFIX}
 CPU_PASS_THROUGH=${CPU_PASS_THROUGH:-1}
 ONSITE=${ONSITE:-0}
-LEVEL=vms
+LEVEL=nw
 
 
 ##############################################################################
@@ -117,11 +117,11 @@ parse_scenario
 
 cleanup_vms
 
-cleanup_networks
+[[ ${LEVEL} =~ nw|sto|dib ]] && cleanup_networks
 
 [[ ${LEVEL} =~ sto|dib ]] && cleanup_sto
 
-[[ ${LEVEL} =~ dib ]] && cleanup_dib
+[[ ${LEVEL} =~ nw|dib ]] && cleanup_dib
 
 generate_ssh_key
 
