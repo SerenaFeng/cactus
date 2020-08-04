@@ -320,7 +320,7 @@ function deploy_istio {
   [[ ! -f ${ISTIOCTL} ]] || [[ false == $(is_istioctl_version) ]] && {
     echo "Begin to install istioctl ${version}"
     [[ -n ${version} ]] && {
-      ISTIO_VERSION=${version} SCENARIO=${PREFIX} sh downloadIstioctl.sh
+      ISTIO_VERSION=${version} K8SON=${PREFIX} sh downloadIstioctl.sh
     }
   }
 

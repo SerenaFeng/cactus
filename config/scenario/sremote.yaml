@@ -1,11 +1,11 @@
 ---
 cluster:
-  name: remote
+  name: sremote
   #domain: istio.k8s
-  version: v1.18.2
+  version: v1.17.3
   image: ubuntu_bionic.qcow2
-  pod_cidr: 10.2.0.0/16
-  service_cidr: 192.2.0.0/16
+  pod_cidr: 10.5.2.0/24
+  service_cidr: 192.5.2.0/24
   enable_admission: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
   runtime_config: api/all=true
   states:

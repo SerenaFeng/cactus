@@ -1,7 +1,7 @@
 ---
 cluster:
 #  domain: cluster.local
-  version: v1.18.2
+  version: v1.18.6
   image: ubuntu_bionic.qcow2
   enable_admission: NodeRestriction
   runtime_config: api/all=true

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 ##############################################################################
 # BEGIN of usage description
@@ -16,7 +17,8 @@ $(notify_i "OPTIONS:" 2)
   -s  scenario short-name
   -p  Pod-name
   -P  VM prefix, \${prefix}_<nodename>
-  -l  cleanup level dib or sto or vms
+  -l  cleanup level dib or sto or nw or vms
+  -a  attach to existing networks
   -r  Use onsite kube-config
   -h  help information
 
@@ -26,6 +28,7 @@ $(notify_i "Input parameters to the build script are:" 2)
 -p POD name as defined in the configuration directory, e.g. pod2
 -P Prefix of vm name, e.g. if prefix=cactus, vm name will be cactus_<node name>
 -l cleanup level dib=all resources, sto=all resources except dib image, nw=delete vms and networks, vms=only delete vms, the default value is nw
+-a  attach to existing networks
 -r Choose to use on-site(configs on the master vm) or local kube-config directory
 -h Print this help information
 
@@ -69,7 +72,7 @@ LEVEL=nw
 ##############################################################################
 # BEGIN of main
 #
-while getopts "p:s:P:l:rh" OPTION
+while getopts "p:s:P:l:a:rh" OPTION
 do
   case $OPTION in
     p) TARGET_POD=${OPTARG} ;;
@@ -77,16 +80,17 @@ do
     P) PREFIX=${OPTARG}; TMP_DIR=/tmp/cactus_${PREFIX} ;;
     l) LEVEL=${OPTARG} ;;
     r) ONSITE+=1 ;;
+    a) NWPREFIX=${OPTARG} ;;
     h) usage; exit 0 ;;
     *) notify_e "[ERROR] Arguments not according to new argument style\n" ;;
   esac
 done
+[[ -z ${NWPREFIX} ]] && NWPREFIX=${PREFIX}
 
 if [[ "$(sudo whoami)" != 'root' ]]; then
   notify_e "[ERROR] This script requires sudo rights!"
   exit 1
 fi
-
 
 mkdir -p ${STORAGE_DIR}
 mkdir -p ${TMP_DIR}
@@ -121,7 +125,7 @@ cleanup_vms
 
 [[ ${LEVEL} =~ sto|dib ]] && cleanup_sto
 
-[[ ${LEVEL} =~ nw|dib ]] && cleanup_dib
+[[ ${LEVEL} =~ dib ]] && cleanup_dib
 
 generate_ssh_key
 

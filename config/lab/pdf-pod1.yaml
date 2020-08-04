@@ -38,19 +38,19 @@ nodes:
     labels:
       purpose: mostuse
     node: *nodeparams
-  - name: minion02
-    enabled: True
-    node_id: 4
-    hostname: minion02
-    cloud_native:
-      enabled: true
-      master: false
-    node: *nodeparams
-  - name: minion03
-    enabled: True
-    node_id: 5
-    hostname: minion02
-    cloud_native:
-      enabled: false
-      master: false
-    node: *nodeparams
+#  - name: minion02
+#    enabled: True
+#    node_id: 4
+#    hostname: minion02
+#    cloud_native:
+#      enabled: true
+#      master: false
+#    node: *nodeparams
+#  - name: minion03
+#    enabled: True
+#    node_id: 5
+#    hostname: minion02
+#    cloud_native:
+#      enabled: false
+#      master: false
+#    node: *nodeparams

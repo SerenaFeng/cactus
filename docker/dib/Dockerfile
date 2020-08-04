@@ -7,7 +7,7 @@ RUN yum update -y \
  && yum clean all
 RUN pip install -U pip
 RUN pip install -U 'setuptools<45.0.0' wheel
-RUN pip install git+https://github.com/openstack/diskimage-builder.git
+RUN pip install git+https://github.com/openstack/diskimage-builder.git@2.38.0
 
 WORKDIR /work
 ADD repos repos/

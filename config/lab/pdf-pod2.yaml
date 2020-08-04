@@ -36,12 +36,3 @@ nodes:
     labels:
       purpose: mostuse
     node: *nodeparams
-  - name: minion02
-    enabled: True
-    node_id: 4
-    cloud_native:
-      enabled: true
-      master: false
-    labels:
-      purpose: mostuse
-    node: *nodeparams

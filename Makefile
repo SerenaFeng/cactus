@@ -26,7 +26,7 @@ define INSTALL_HELP
 #   s: scenario, defined under config/scenario, default by istio
 #   p: pod name, definded under config/labs, default by pod1
 #   P: prefix for node name, default by cactus
-#   l: cleanup level, dib=all resources, sto=all except dib image, vms=only vms and networks, default by vms
+#   l: cleanup level, dib=all resources, sto=all except dib image, nw=network and vms, vms=only vms, default by nw
 # Example:
 #   make install w=vms
 #   
@@ -66,7 +66,7 @@ define CLEAN_HELP
 #
 # Args:
 #   h: $(HELP)
-#   l: cleanup level, dib=all resources, sto=all except dib image, vms=only vms and networks, default by vms
+#   l: cleanup level, dib=all resources, sto=all except dib image, nw=network and vms, vms=only vms, default by nw
 #   P: uppercase, prefix for node name, default by cactus
 # Example:
 #   make clean P=cactus c=dib
@@ -123,22 +123,28 @@ delete:
 	kubectl delete -f $(CONFDIR)/$(o)
 endif
 
-.PHONY: istio remote helm cilium basic
-istio: 
-	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s istio -p pod1 -P istio -l vms 2>&1 | tee istio.log
-remote:
-	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s remote -p pod2 -P remote -l vms 2>&1 | tee remote.log
-helm: 
-	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s helm -p pod7 -P helm -l vms 2>&1 | tee helm.log
-cilium: 
-	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s cilium -p pod2 -P cilium -l vms 2>&1 | tee cilium.log
-basic: 
-	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s basic -p pod11 -P basic  -l vms 2>&1 | tee basic.log
-rmaster: 
-	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s basic -p pod3 -P rmaster -l vms 2>&1 | tee rmaster.log
-rremote: 
-	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s basic -p pod4 -P rremote -l vms 2>&1 | tee rremote.log
-xmaster: 
-	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s xmaster -p pod5.1 -P xmaster -l vms 2>&1 | tee xmaster.log
-xremote: 
-	sudo CI_DEBUG=$(d) bash deploy/deploy.sh -s basic -p pod5.2 -P xremote -l vms 2>&1 | tee xremote.log
+define do_deploy
+	sudo CI_DEBUG=$(d) bash deploy/deploy.sh \
+		-P $(1) \
+		-s $(2) \
+		-p $(3) \
+		$(if $(4), -l $(4), -l nw) \
+		$(if $(5), -a $(5)) 2>&1 | tee $(1).log
+endef
+
+helm:
+	$(call do_deploy, helm, helm, pod7)
+basic:
+	$(call do_deploy, basic, basic, pod11)
+rmain:
+	$(call do_deploy, rmain, basic, pod1)
+rremote:
+	$(call do_deploy, rremote, basic, pod2)
+xmain:
+	$(call do_deploy, xmain, xmain, pod3)
+xremote:
+	$(call do_deploy, xremote, xremote, pod4)
+smain:
+	$(call do_deploy, smain, smain, pod5.1)
+sremote:
+	$(call do_deploy, sremote, sremote, pod5.2, vms, smain)

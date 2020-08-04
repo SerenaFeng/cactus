@@ -102,8 +102,8 @@ printf "%s download complete!\n" "${filename}"
 
 # setup istioctl
 cd "$HOME" || exit
-if [ -n ${SCENARIO} ]; then
-  path=.istioctl.${SCENARIO}/bin
+if [ -n ${K8SON} ]; then
+  path=.istioctl.${K8SON}/bin
 else
   path=.istioctl/bin
 fi

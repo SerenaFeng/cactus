@@ -26,7 +26,7 @@ function update_bridges {
   read -r -a BR_NAMES <<< $(__get_bridges)
   for br in "${BR_NAMES[@]}"; do
     old=$(eval echo "\$${BRIDGE_IDENTITY}${br}")
-    eval "${BRIDGE_IDENTITY}${br}=${PREFIX}_${old}"
+    eval "${BRIDGE_IDENTITY}${br}=${NWPREFIX}_${old}"
   done
 }
 
@@ -70,7 +70,7 @@ function build_images {
   [[ 0 != $? ]] && {
     echo "Create base images failed"
     exit 1
-  }
+  } || true
 }
 
 function cleanup_vms {
@@ -104,7 +104,7 @@ function prepare_vms {
 }
 
 function cleanup_networks {
-  for net in $(virsh net-list --name | grep "${PREFIX}_"); do
+  for net in $(virsh net-list --all --name | grep "${PREFIX}_"); do
     virsh net-destroy "${net}" || true
     virsh net-undefine "${net}"
   done
@@ -165,7 +165,7 @@ function create_vms {
 function update_network {
   net=${1}
   for vnode in "${vnodes[@]}"; do
-    local br=$(eval echo "\$idf_cactus_jumphost_bridges_${net}")
+    local br=$(eval echo "\$${BRIDGE_IDENTITY}${net}")
     local guest="${PREFIX}_${vnode}"
     local ip=$(eval "get_${net}_ip ${vnode}")
     local mac=$(virsh domiflist ${guest} 2>&1 | grep ${br} | awk '{print $5; exit}')
